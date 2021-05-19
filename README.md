@@ -1,0 +1,1 @@
+# securicad-azure-collector
