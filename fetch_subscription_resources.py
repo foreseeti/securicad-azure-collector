@@ -480,6 +480,10 @@ def iterate_resources_to_json(
                 certificates = []
                 secrets = []
                 kv_components = {}
+                try:
+                    enable_rbac_authorization = rg_results_as_dict["data"][0]["properties"]["enabledForDeployment"]
+                except KeyError:
+                    enable_rbac_authorization = False # Default value
                 kvm_client = KeyVaultManagementClient(
                     credential=credentials, subscription_id=sub_id
                 )
@@ -663,6 +667,7 @@ def iterate_resources_to_json(
                     virtualNetworkRules=virtual_network_rules,
                     purgeProtection=purge_protection,
                     accessPolicies=principal_data_actions,
+                    enableRbacAuthorization=enable_rbac_authorization
                 )
                 kv_keys, kv_certs, kv_secrets = None, None, None
                 json_key = "keyVaults"
@@ -2954,8 +2959,10 @@ def write_ad_as_json():
                 final_permissions = []
                 for perm in permissions:
                     permission_to_add = {
-                        "actions": (perm.actions + perm.data_actions),
-                        "notActions": (perm.not_actions + perm.not_data_actions),
+                        "actions": perm.actions,
+                        "notActions": perm.not_actions,
+                        "dataActions": perm.data_actions,
+                        "notDataActions":  perm.not_data_actions
                     }
                     final_permissions.append(permission_to_add)
                 role_to_add = {
