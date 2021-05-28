@@ -1024,6 +1024,10 @@ def iterate_resources_to_json(
                     gw_ip = raw_properties["gatewayIpAddress"]
                 except KeyError:
                     gw_ip = None
+                try:
+                    bgp_setting = raw_properties["bgpSettings"]
+                except KeyError:
+                    bgp_setting = None
 
                 object_to_add = LocalNetworkGateway(
                     gwId=resourceId,
@@ -1032,6 +1036,7 @@ def iterate_resources_to_json(
                     localNetworkAddressSpace=local_Network_AddressSpace,
                     gatewayIp=gw_ip,
                     provider=resource_type,
+                    bgpSettings=bgp_setting,
                 )
                 json_key = "localNetworkGateways"
 
