@@ -59,6 +59,7 @@ from schema_classes import (
     StorageAccount,
     StorageAccountService,
     VnetGateway,
+    LocalNetworkGateway,
     RouteTable,
     Connection,
     ManagementGroup,
@@ -1000,6 +1001,44 @@ def iterate_resources_to_json(
                     provider=resource_type,
                 )
                 json_key = "vnetGateways"
+
+            elif resource_type == "microsoft.network/localnetworkgateways":
+                str_query = f"resources | where type =~ 'Microsoft.Network/localnetworkgateways' and name == '{name}'"
+                query = arg.models.QueryRequest(
+                    subscriptions=[sub_id], query=str_query, options=rg_query_options,
+                )
+                try:
+                    rg_results_as_dict = rg_client.resources(query=query).__dict__
+                except:
+                    if DEBUGGING:
+                        print(
+                            f"ERROR: Couldn't execute resource graph query of {name}, skipping asset."
+                        )
+                    continue
+                raw_properties = rg_results_as_dict["data"][0]["properties"]
+                try:
+                    local_Network_AddressSpace = raw_properties["localNetworkAddressSpace"]["addressPrefixes"]
+                except KeyError:
+                    local_Network_AddressSpace = []
+                try:
+                    gw_ip = raw_properties["gatewayIpAddress"]
+                except KeyError:
+                    gw_ip = None
+                try:
+                    bgp_setting = raw_properties["bgpSettings"]
+                except KeyError:
+                    bgp_setting = None
+
+                object_to_add = LocalNetworkGateway(
+                    gwId=resourceId,
+                    name=name,
+                    resourceGroup=resource_group,
+                    localNetworkAddressSpace=local_Network_AddressSpace,
+                    gatewayIp=gw_ip,
+                    provider=resource_type,
+                    bgpSettings=bgp_setting,
+                )
+                json_key = "localNetworkGateways"
 
             elif resource_type == "microsoft.network/connections":
                 str_query = f"resources | where type =~ 'Microsoft.Network/connections' and name == '{name}'"

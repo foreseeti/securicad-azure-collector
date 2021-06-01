@@ -130,3 +130,6 @@ dmypy.json
 
 # Own defined files
 ads
+
+# env var
+envvariables.sh

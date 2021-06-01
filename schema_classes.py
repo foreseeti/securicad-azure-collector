@@ -146,6 +146,17 @@ class VnetGateway:
         self.capacity = capacity
         self.provider = provider
 
+class LocalNetworkGateway:
+    def __init__(
+        self, gwId, name, resourceGroup, localNetworkAddressSpace, gatewayIp, provider, bgpSettings
+    ):
+        self.id = gwId
+        self.name = name
+        self.resourceGroup = resourceGroup
+        self.localNetworkAddressSpace = localNetworkAddressSpace
+        self.gatewayIp = gatewayIp
+        self.provider = provider
+        self.bgpSettings = bgpSettings
 
 class Connection:
     def __init__(
