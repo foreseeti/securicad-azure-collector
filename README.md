@@ -16,8 +16,6 @@ Key Vault Access Policies - You may assign the security principal key, secret an
 ## Optional: Application Insights - data enrichment
 Application Insights records the traffic in your azure environment and can be used to enrich the securiCAD model by making us of its topology mapping. The topology dump allows the parser to connect services that are communicating to each other through connection strings/keys, as it sees that there are some sort of communication between these services that are not relying on RBAC assignments. To make use of this, set up an Application Insights component in your azure environment, and attach the services that you are about to analyze in securiCAD in their respective configuration page, and let the entire system run for some time.
 
-TODO: A more detailed description of how to set up Application Insights in Azure
-
 # Installation of the data-exctractor
 
 ## Setting up the environment
@@ -85,7 +83,7 @@ empty: '' / "[]" / Not Applied
 ```
 
 ### Limiting the Application Insights interval
-export the ```APP_INSIGHTS_INTERVAL``` variable if you wish to include a custom scope on your application insights' topology data. This is a time interval following the ISO8601 standard: YYYY-MM-DDTHH-MM-SS/YYYY-MM-DDTHH-MM-SS (e.g. 2020-01-01T16:01:30.000/2021-02-20T16:01:30.000). If not set, or set to something other than the required time format, the fetcher defaults to latest 90 days. Make sure to include the resource group where the application insights resources resides ```AZURE_RESOURCE_GROUP_NAMES``` to fetch application insights data.
+export the ```APP_INSIGHTS_INTERVAL``` variable if you wish to include a custom scope on your application insights' topology data. This is a time interval following the ISO8601 standard: YYYY-MM-DDTHH-MM-SS/YYYY-MM-DDTHH-MM-SS (e.g. 2020-01-01T16:01:30.000/2021-02-20T16:01:30.000). If not set, or set to something other than the required time format, the collector defaults to latest 90 days. Make sure to include the resource group where the application insights resources resides ```AZURE_RESOURCE_GROUP_NAMES``` to fetch application insights data.
 
 Accepted Format:
 ```bash
@@ -147,4 +145,7 @@ Now you can run the data extrator to generate a json dump of your Azure environm
 python3 fetch_subscription_resources.py
 ```
 
-The program will dump an ```active_directory.json``` file under the `environment_files` directory, and a file called ```application_insights.json``` under the same directory if an _application insights_ resource was found within the scope of the provided Azure environment. Again, the ```application_insights.json``` can be used to enrich the model by connecting services that communicate to each other through connection strings / keys. This data file is optional, but we suggest running if you are using App Services and Function Apps that are communicating with Azure backend resources where Managed Identities are not used. Use these files as input for our azure_parser TODO: **docs_here**
+The program will dump an ```active_directory.json``` file under the `environment_files` directory, and a file called ```application_insights.json``` under the same directory if an _application insights_ resource was found within the scope of the provided Azure environment. Again, the ```application_insights.json``` can be used to enrich the model by connecting services that communicate to each other through connection strings / keys. This data file is optional, but we suggest running if you are using App Services and Function Apps that are communicating with Azure backend resources where Managed Identities are not used. Use these files as input for our `securiCAD azure parser`. 
+
+## Docs page
+For additional information regarding usage of this collector and the securiCAD azure solution, please visit our [docs](https://docs.foreseeti.com/docs/integrating-with-azure) page.
