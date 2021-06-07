@@ -210,14 +210,17 @@ def iterate_resources_to_json(
 
                 ssh_keys = []
                 if os == "Linux":
-                    linux_config = rg_results_as_dict["data"][0]["properties"][
-                        "osProfile"
-                    ]["linuxConfiguration"]
-                    # If no public keys doesn't exist, avoid crash
-                    linux_config.setdefault("ssh", {})
-                    ssh_keys_raw = linux_config.get("ssh").get("publicKeys")
-                    for ssh_key in ssh_keys_raw or []:
-                        ssh_keys.append(ssh_key["keyData"])
+                    try:
+                        linux_config = rg_results_as_dict["data"][0]["properties"][
+                            "osProfile"
+                        ]["linuxConfiguration"]
+                        # If no public keys doesn't exist, avoid crash
+                        linux_config.setdefault("ssh", {})
+                        ssh_keys_raw = linux_config.get("ssh").get("publicKeys")
+                        for ssh_key in ssh_keys_raw or []:
+                            ssh_keys.append(ssh_key["keyData"])
+                    except KeyError:
+                        print("Couldn't fetch the ssh keys data from the linux vm configurations")
 
                 network_interface_ids = []
                 networkInterfaces = rg_results_as_dict["data"][0]["properties"][
@@ -1219,7 +1222,7 @@ def iterate_resources_to_json(
                                 print(
                                     f"Attribute Error caught when fetching blobcontainers. Check azure-mgmt-storage package for changed fields. Traceback: \n {e}"
                                 )
-                    except ValueError:
+                    except:
                         if DEBUGGING:
                             print(
                                 f"Could not list blob containers on storage account: {name}. Check permissions"
