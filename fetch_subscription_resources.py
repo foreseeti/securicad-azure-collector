@@ -932,6 +932,7 @@ def iterate_resources_to_json(
                 raw_vnetPeerings = raw_properties["virtualNetworkPeerings"]
                 for raw_vnetPeering in raw_vnetPeerings:
                     vnet_peering = {
+                        "id": raw_vnetPeering["id"],
                         "peering_name": raw_vnetPeering["name"],
                         "remote_network": raw_vnetPeering["properties"]["remoteVirtualNetwork"]["id"]
                     }
