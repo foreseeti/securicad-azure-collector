@@ -929,12 +929,12 @@ def iterate_resources_to_json(
                     )
                     subnets.append(subnet_class.__dict__)
                 vnet_peerings = []
-                raw_vnetPeerings = raw_properties["virtualNetworkPeerings"]
-                for raw_vnetPeering in raw_vnetPeerings:
+                raw_vnet_peerings = raw_properties.get("virtualNetworkPeerings")
+                for raw_vnet_peering in raw_vnet_peerings or []:
                     vnet_peering = {
-                        "id": raw_vnetPeering["id"],
-                        "peering_name": raw_vnetPeering["name"],
-                        "remote_network": raw_vnetPeering["properties"]["remoteVirtualNetwork"]["id"]
+                        "id": raw_vnet_peering.get("id"),
+                        "peering_name": raw_vnet_peering.get("name"),
+                        "remote_network": raw_vnet_peering.get("properties", {}).get("remoteVirtualNetwork",{}).get("id")
                     }
                     vnet_peerings.append(vnet_peering)
                 object_to_add = Vnet(
