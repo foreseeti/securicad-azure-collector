@@ -220,7 +220,7 @@ def iterate_resources_to_json(
                         for ssh_key in ssh_keys_raw or []:
                             ssh_keys.append(ssh_key["keyData"])
                     except KeyError:
-                        print("Couldn't fetch the ssh keys data from the linux vm configurations")
+                        print("Couldn't fetch the ssh keys metadata from the {name} VM.")
 
                 network_interface_ids = []
                 networkInterfaces = rg_results_as_dict["data"][0]["properties"][
