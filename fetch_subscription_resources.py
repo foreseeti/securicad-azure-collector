@@ -40,6 +40,7 @@ import cProfile
 import pstats
 import io
 from pstats import SortKey
+from typing import Dict, List
 
 # Defined object classes following the json schema
 from schema_classes import (
@@ -76,6 +77,8 @@ from schema_classes import (
     VirtualMachineScaleSet,
     APIManagement,
 )
+
+from services import ad_groups
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEBUGGING = False
@@ -499,7 +502,7 @@ def iterate_resources_to_json(
                     }
                     principal_data_actions.append(
                         {
-                            "principalId": ap.object_id,
+                            "objectId": ap.object_id,
                             "tenantId": ap.tenant_id,
                             "permissions": permission_dict,
                         }
@@ -2941,6 +2944,7 @@ def write_ad_as_json():
             credentials, subscriptionId, api_version="2018-01-01-preview"
         )  # Need two seperate once because one version doesn't support principal_type while the other doesn't contain role_definitions
         role_assignments = amc.role_assignments.list()
+        group_members: Dict[str, List[str]] = {} # Will map any principal Group to all its members
         for role_assignment in role_assignments:
             role_assignment_dict = role_assignment.__dict__
             if any(
@@ -2974,8 +2978,39 @@ def write_ad_as_json():
                     "roleName": role_definition.role_name,
                     "permissions": final_permissions,
                 }
+                if role_assignment_dict["principal_type"] == "Group":
+                    if not os.environ.get("AZURE_TENANT_ID") or not os.environ.get("AZURE_CLIENT_ID") or not os.environ.get("AZURE_CLIENT_SECRET"):
+                        print(f"ERROR: AZURE environment variable(s) not set. Impact: Cannot read group members of group {role_assignment_dict['principal_id']}. Run python3 fetch_subscription_resources.py -h for more info.")
+                    else:
+                        tenant_id = os.environ.get("AZURE_TENANT_ID")
+                        client_id = os.environ.get("AZURE_CLIENT_ID")
+                        auth_data = {
+                            "client_id": os.environ.get("AZURE_CLIENT_ID"),
+                            "scope": "https://graph.microsoft.com/.default",
+                            "grant_type": "client_credentials",
+                            "client_secret": os.environ.get("AZURE_CLIENT_SECRET")
+                        }
+                        graph_headers = {}
+                        graph_res = requests.post(url=f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token",data=auth_data, headers={"Content-Type": "application/x-www-form-urlencoded"})
+                        access_token = graph_res.json().get("access_token")
+                        try:
+                            graph_headers.update({"Authorization": f"Bearer {access_token}"})
+                        except:
+                            if DEBUGGING:
+                                print(f"ERROR: Couldn't get access_token for Microsoft Graph. Impact: Cannot read group members of group {role_assignment_dict['principal_id']}")
+                        nested_groups = [role_assignment_dict["principal_id"]]
+                        while(len(nested_groups) > 0):
+                            group_id = nested_groups.pop()
+                            print(f"Group: {group_id}")
+                            if group_id not in group_members: # Group membership can be cyclic, we don't want to go on forever
+                                members = ad_groups.collect_group_memberships(group_id, tenant_id, graph_headers, DEBUGGING)
+                                group_members[group_id] = members
+                                print(f"\tmember {members}")
+                                for member in members:
+                                    if member["member_type"] == "group" and member["id"] not in group_members:
+                                        nested_groups.append(member["id"])
                 rbac_roles.append(role_to_add)
-
+    final_json_object["GroupMembers"] = group_members
     final_json_object["subscriptions"] = subscriptions
     final_json_object["roleAssignments"] = rbac_roles
     subscriptions, rbac_roles = None, None
@@ -3239,7 +3274,6 @@ def validate_arguments(argv):
         global ASSETS
         COUNTING = True
         ASSETS = {}
-
 
 # converts asset count to json
 # only run with -ca flag
