@@ -380,7 +380,7 @@ class Subnet:
 
 class Vnet:
     def __init__(
-        self, resourceId, name, resourceGroup, addressSpace, subnets, provider
+        self, resourceId, name, resourceGroup, addressSpace, subnets, provider, vnetPeerings
     ):
         """Required: \n
         resourceId, name, resourceGroup, addressSpace, subnets
@@ -391,6 +391,7 @@ class Vnet:
         self.addressSpace = addressSpace
         self.subnets = subnets
         self.provider = provider
+        self.vnetPeerings = vnetPeerings
 
 
 class RouteTable:
