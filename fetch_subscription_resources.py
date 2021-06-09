@@ -2944,7 +2944,8 @@ def write_ad_as_json():
             credentials, subscriptionId, api_version="2018-01-01-preview"
         )  # Need two seperate once because one version doesn't support principal_type while the other doesn't contain role_definitions
         role_assignments = amc.role_assignments.list()
-        group_members: Dict[str, List[str]] = {} # Will map any principal Group to all its members
+        groups: List[Dict[str, "Group"]] = [] # Will map any principal Group to all its members
+        checked_groups: set = set() #Keeps track of which groups we have checked members for, to not be stuck forever
         for role_assignment in role_assignments:
             role_assignment_dict = role_assignment.__dict__
             if any(
@@ -3001,16 +3002,17 @@ def write_ad_as_json():
                         nested_groups = [role_assignment_dict["principal_id"]]
                         while(len(nested_groups) > 0):
                             group_id = nested_groups.pop()
-                            print(f"Group: {group_id}")
-                            if group_id not in group_members: # Group membership can be cyclic, we don't want to go on forever
+                            if group_id not in checked_groups: # Group membership can be cyclic, we don't want to go on forever
+                                checked_groups.add(group_id)
                                 members = ad_groups.collect_group_memberships(group_id, tenant_id, graph_headers, DEBUGGING)
-                                group_members[group_id] = members
-                                print(f"\tmember {members}")
+                                group_members = []
                                 for member in members:
-                                    if member["member_type"] == "group" and member["id"] not in group_members:
+                                    group_members.append(member)
+                                    if member["memberType"] == "group" and member["id"] not in checked_groups:
                                         nested_groups.append(member["id"])
+                                groups.append({"groupId": group_id, "members": group_members})
                 rbac_roles.append(role_to_add)
-    final_json_object["GroupMembers"] = group_members
+    final_json_object["groups"] = groups
     final_json_object["subscriptions"] = subscriptions
     final_json_object["roleAssignments"] = rbac_roles
     subscriptions, rbac_roles = None, None
