@@ -755,3 +755,12 @@ class APIManagement:
         self.privateIpAddresses = privateIpAddresses
         self.apiManagementUsers = apiManagementUsers
         self.apiManagementSubscriptions = apiManagementSubscriptions
+
+class Group:
+    def __init__(
+        self,
+        groupId,
+        members
+    ):
+        self.groupId = groupId
+        self.members = members
