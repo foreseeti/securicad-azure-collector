@@ -2509,7 +2509,12 @@ def iterate_resources_to_json(
                             f"ERROR: Couldn't execute resource graph query of {name}, skipping asset."
                         )
                     continue
-                raw_properties = rg_results_as_dict["data"][0]["properties"]
+                try:
+                    raw_properties = rg_results_as_dict["data"][0]["properties"]
+                except IndexError:
+                    if DEBUGGING:
+                        print(f"ERROR: Couldn't get resource graph data from apimanagement {name}. Impact: missing infrastructure")
+                    continue
                 try:
                     subnetId = raw_properties["virtualNetworkConfiguration"][
                         "subnetResourceId"
