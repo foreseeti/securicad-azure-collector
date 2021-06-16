@@ -20,6 +20,7 @@ from azure.core.exceptions import ClientAuthenticationError
 import requests
 import re
 import datetime
+from datetime import datetime
 from pathlib import Path
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.subscription import SubscriptionClient
@@ -3076,10 +3077,11 @@ def write_ad_as_json():
     resource_groups = None
     # Save Application Insights into a seperate file
     app_insights = final_json_object.get("applicationInsights")
+    timestamp = datetime.today().strftime('%Y-%m-%d_%H:%M')
     if app_insights != None:
         if app_insights != {}:
             with open(
-                os.path.join(BASE_DIR, "environment_files/application_insights.json"),
+                os.path.join(BASE_DIR, "environment_files/application_insights{timestamp}.json"),
                 "w",
             ) as app_insights_file:
                 json.dump(app_insights, fp=app_insights_file, indent=4, sort_keys=True)
@@ -3087,7 +3089,7 @@ def write_ad_as_json():
         del final_json_object["applicationInsights"]
     # print(json.dumps(obj=final_json_object, indent=4, sort_keys=True))
     with open(
-        os.path.join(BASE_DIR, "environment_files/active_directory.json"), "w"
+        os.path.join(BASE_DIR, "environment_files/active_directory{timestamp}.json"), "w"
     ) as json_file:
         json.dump(obj=final_json_object, fp=json_file, indent=4, sort_keys=True)
 

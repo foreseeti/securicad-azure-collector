@@ -145,7 +145,7 @@ Now you can run the data extrator to generate a json dump of your Azure environm
 python3 fetch_subscription_resources.py
 ```
 
-The program will dump an ```active_directory.json``` file under the `environment_files` directory, and a file called ```application_insights.json``` under the same directory if an _application insights_ resource was found within the scope of the provided Azure environment. Again, the ```application_insights.json``` can be used to enrich the model by connecting services that communicate to each other through connection strings / keys. This data file is optional, but we suggest running if you are using App Services and Function Apps that are communicating with Azure backend resources where Managed Identities are not used. Use these files as input for our `securiCAD azure parser`. 
+The program will dump a timestamped ```active_directory_YYYY-mm-dd_HH:MM.json``` file under the `environment_files` directory, and a file called ```application_insights_YYYY-mm-dd_HH:MM.json``` under the same directory if an _application insights_ resource was found within the scope of the provided Azure environment. Again, the ```application_insights.json``` can be used to enrich the model by connecting services that communicate to each other through connection strings / keys. This data file is optional, but we suggest running if you are using App Services and Function Apps that are communicating with Azure backend resources where Managed Identities are not used. Use these files as input for our `securiCAD azure parser`. 
 
 ## Docs page
 For additional information regarding usage of this collector and the securiCAD azure solution, please visit our [docs](https://docs.foreseeti.com/docs/integrating-with-azure) page.
