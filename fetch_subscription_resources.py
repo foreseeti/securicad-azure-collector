@@ -3080,7 +3080,7 @@ def write_ad_as_json():
     if app_insights != None:
         if app_insights != {}:
             with open(
-                os.path.join(BASE_DIR, "environment_files/application_insights_{timestamp}.json"),
+                os.path.join(BASE_DIR, f"environment_files/application_insights_{timestamp}.json"),
                 "w",
             ) as app_insights_file:
                 json.dump(app_insights, fp=app_insights_file, indent=4, sort_keys=True)
@@ -3088,7 +3088,7 @@ def write_ad_as_json():
         del final_json_object["applicationInsights"]
     # print(json.dumps(obj=final_json_object, indent=4, sort_keys=True))
     with open(
-        os.path.join(BASE_DIR, "environment_files/active_directory_{timestamp}.json"), "w"
+        os.path.join(BASE_DIR, f"environment_files/active_directory_{timestamp}.json"), "w"
     ) as json_file:
         json.dump(obj=final_json_object, fp=json_file, indent=4, sort_keys=True)
 
