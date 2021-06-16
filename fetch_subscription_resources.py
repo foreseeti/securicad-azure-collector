@@ -20,7 +20,6 @@ from azure.core.exceptions import ClientAuthenticationError
 import requests
 import re
 import datetime
-from datetime import datetime
 from pathlib import Path
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.subscription import SubscriptionClient
@@ -3077,7 +3076,7 @@ def write_ad_as_json():
     resource_groups = None
     # Save Application Insights into a seperate file
     app_insights = final_json_object.get("applicationInsights")
-    timestamp = datetime.today().strftime('%Y-%m-%d_%H:%M')
+    timestamp = datetime.datetime.today().strftime('%Y-%m-%d_%H:%M')
     if app_insights != None:
         if app_insights != {}:
             with open(
