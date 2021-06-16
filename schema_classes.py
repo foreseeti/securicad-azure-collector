@@ -127,7 +127,7 @@ class RBACRole:
         """
         self.id = roleId
         self.name = name
-        self.scope = scope
+        self.scope = scope.lower()
         self.principalId = principalId
         self.principalType = principalType
         self.roleName = roleName
@@ -172,10 +172,9 @@ class Connection:
 
 
 class SecurityPrincipal:
-    def __init__(self, principalType, principalId, scope=None):
+    def __init__(self, principalType, principalId):
         self.principalType = principalType
         self.principalId = principalId
-        self.scope = scope
 
 
 class StorageAccountService:
@@ -438,6 +437,7 @@ class KeyVault:
         virtualNetworkRules,
         purgeProtection,
         accessPolicies,
+        enableRbacAuthorization: bool,
     ):
         """Required: \n
         resourceId, name, resourceGroup
@@ -454,6 +454,7 @@ class KeyVault:
         self.virtualNetworkRules = virtualNetworkRules
         self.purgeProtection = purgeProtection
         self.accessPolicies = accessPolicies
+        self.enableRbacAuthorization: bool = enableRbacAuthorization
 
 
 class SshKey:
@@ -754,3 +755,12 @@ class APIManagement:
         self.privateIpAddresses = privateIpAddresses
         self.apiManagementUsers = apiManagementUsers
         self.apiManagementSubscriptions = apiManagementSubscriptions
+
+class Group:
+    def __init__(
+        self,
+        groupId,
+        members
+    ):
+        self.groupId = groupId
+        self.members = members

@@ -40,6 +40,7 @@ import cProfile
 import pstats
 import io
 from pstats import SortKey
+from typing import Dict, List
 
 # Defined object classes following the json schema
 from schema_classes import (
@@ -76,6 +77,8 @@ from schema_classes import (
     VirtualMachineScaleSet,
     APIManagement,
 )
+
+from services import ad_groups
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DEBUGGING = False
@@ -480,6 +483,10 @@ def iterate_resources_to_json(
                 certificates = []
                 secrets = []
                 kv_components = {}
+                try:
+                    enable_rbac_authorization = rg_results_as_dict["data"][0]["properties"]["enabledForDeployment"]
+                except KeyError:
+                    enable_rbac_authorization = False # Default value
                 kvm_client = KeyVaultManagementClient(
                     credential=credentials, subscription_id=sub_id
                 )
@@ -495,7 +502,7 @@ def iterate_resources_to_json(
                     }
                     principal_data_actions.append(
                         {
-                            "principalId": ap.object_id,
+                            "objectId": ap.object_id,
                             "tenantId": ap.tenant_id,
                             "permissions": permission_dict,
                         }
@@ -663,6 +670,7 @@ def iterate_resources_to_json(
                     virtualNetworkRules=virtual_network_rules,
                     purgeProtection=purge_protection,
                     accessPolicies=principal_data_actions,
+                    enableRbacAuthorization=enable_rbac_authorization
                 )
                 kv_keys, kv_certs, kv_secrets = None, None, None
                 json_key = "keyVaults"
@@ -2501,7 +2509,12 @@ def iterate_resources_to_json(
                             f"ERROR: Couldn't execute resource graph query of {name}, skipping asset."
                         )
                     continue
-                raw_properties = rg_results_as_dict["data"][0]["properties"]
+                try:
+                    raw_properties = rg_results_as_dict["data"][0]["properties"]
+                except IndexError:
+                    if DEBUGGING:
+                        print(f"ERROR: Couldn't get resource graph data from apimanagement {name}. Impact: missing infrastructure")
+                    continue
                 try:
                     subnetId = raw_properties["virtualNetworkConfiguration"][
                         "subnetResourceId"
@@ -2936,6 +2949,8 @@ def write_ad_as_json():
             credentials, subscriptionId, api_version="2018-01-01-preview"
         )  # Need two seperate once because one version doesn't support principal_type while the other doesn't contain role_definitions
         role_assignments = amc.role_assignments.list()
+        groups: List[Dict[str, "Group"]] = [] # Will map any principal Group to all its members
+        checked_groups: set = set() #Keeps track of which groups we have checked members for, to not be stuck forever
         for role_assignment in role_assignments:
             role_assignment_dict = role_assignment.__dict__
             if any(
@@ -2954,8 +2969,10 @@ def write_ad_as_json():
                 final_permissions = []
                 for perm in permissions:
                     permission_to_add = {
-                        "actions": (perm.actions + perm.data_actions),
-                        "notActions": (perm.not_actions + perm.not_data_actions),
+                        "actions": perm.actions,
+                        "notActions": perm.not_actions,
+                        "dataActions": perm.data_actions,
+                        "notDataActions":  perm.not_data_actions
                     }
                     final_permissions.append(permission_to_add)
                 role_to_add = {
@@ -2967,8 +2984,40 @@ def write_ad_as_json():
                     "roleName": role_definition.role_name,
                     "permissions": final_permissions,
                 }
+                if role_assignment_dict["principal_type"] == "Group":
+                    if not os.environ.get("AZURE_TENANT_ID") or not os.environ.get("AZURE_CLIENT_ID") or not os.environ.get("AZURE_CLIENT_SECRET"):
+                        print(f"ERROR: AZURE environment variable(s) not set. Impact: Cannot read group members of group {role_assignment_dict['principal_id']}. Run python3 fetch_subscription_resources.py -h for more info.")
+                    else:
+                        tenant_id = os.environ.get("AZURE_TENANT_ID")
+                        client_id = os.environ.get("AZURE_CLIENT_ID")
+                        auth_data = {
+                            "client_id": os.environ.get("AZURE_CLIENT_ID"),
+                            "scope": "https://graph.microsoft.com/.default",
+                            "grant_type": "client_credentials",
+                            "client_secret": os.environ.get("AZURE_CLIENT_SECRET")
+                        }
+                        graph_headers = {}
+                        graph_res = requests.post(url=f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token",data=auth_data, headers={"Content-Type": "application/x-www-form-urlencoded"})
+                        access_token = graph_res.json().get("access_token")
+                        try:
+                            graph_headers.update({"Authorization": f"Bearer {access_token}"})
+                        except:
+                            if DEBUGGING:
+                                print(f"ERROR: Couldn't get access_token for Microsoft Graph. Impact: Cannot read group members of group {role_assignment_dict['principal_id']}")
+                        nested_groups = [role_assignment_dict["principal_id"]]
+                        while(len(nested_groups) > 0):
+                            group_id = nested_groups.pop()
+                            if group_id not in checked_groups: # Group membership can be cyclic, we don't want to go on forever
+                                checked_groups.add(group_id)
+                                members = ad_groups.collect_group_memberships(group_id, tenant_id, graph_headers, DEBUGGING)
+                                group_members = []
+                                for member in members:
+                                    group_members.append(member)
+                                    if member["memberType"] == "group" and member["id"] not in checked_groups:
+                                        nested_groups.append(member["id"])
+                                groups.append({"groupId": group_id, "members": group_members})
                 rbac_roles.append(role_to_add)
-
+    final_json_object["groups"] = groups
     final_json_object["subscriptions"] = subscriptions
     final_json_object["roleAssignments"] = rbac_roles
     subscriptions, rbac_roles = None, None
@@ -3232,7 +3281,6 @@ def validate_arguments(argv):
         global ASSETS
         COUNTING = True
         ASSETS = {}
-
 
 # converts asset count to json
 # only run with -ca flag
