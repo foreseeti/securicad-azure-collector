@@ -213,6 +213,7 @@ def iterate_resources_to_json(
                 json_key = "networkInterfaces"
 
             elif resource_type == "microsoft.network/networksecuritygroups":
+                object_to_add = network_security_groups.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
                 str_query = f"resources | where type =~ 'Microsoft.Network/networkSecurityGroups' and name == '{name}'"
                 query = arg.models.QueryRequest(
                     subscriptions=[sub_id], query=str_query, options=rg_query_options,
