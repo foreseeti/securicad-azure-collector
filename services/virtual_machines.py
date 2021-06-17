@@ -1,7 +1,7 @@
 from schema_classes import VirtualMachine
 import azure.mgmt.resourcegraph as arg
 
-def iterate(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resourceId, DEBUGGING) -> VirtualMachine:
+def parse_obj(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING) -> VirtualMachine:
     managedBy = resource.managed_by
     # Fetching the hard to get properties with resource graph
     str_query = f"resources | where type == 'microsoft.compute/virtualmachines' and name == '{name}'"
@@ -96,7 +96,7 @@ def iterate(resource, resource_type, resource_group, sub_id, name, rg_client, rg
         user_assigned_ids = []
 
     object_to_add = VirtualMachine(
-        resourceId=resourceId,
+        resourceId=resource_id,
         name=name,
         os=os,
         osDisk=os_disk,

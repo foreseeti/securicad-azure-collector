@@ -1,7 +1,7 @@
 from schema_classes import VirtualMachineScaleSet
 import azure.mgmt.resourcegraph as arg
 
-def iterate(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resourceId, DEBUGGING) -> VirtualMachineScaleSet:
+def parse_obj(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING) -> VirtualMachineScaleSet:
     managedBy = resource.managed_by
     # Fetching the hard to get properties with resource graph
     str_query = f"resources | where type == 'microsoft.compute/virtualmachinescalesets' and name == '{name}'"
@@ -34,7 +34,7 @@ def iterate(resource, resource_type, resource_group, sub_id, name, rg_client, rg
                 f"Couldn't find the osType of virtual machine scale set {name}"
             )
         os = None
-    os_disk = f"{resourceId}-OSDisk"
+    os_disk = f"{resource_id}-OSDisk"
     ssh_keys = []
     if os == "Linux":
         try:
@@ -61,7 +61,7 @@ def iterate(resource, resource_type, resource_group, sub_id, name, rg_client, rg
     try:
         data_disks = raw_properties["storageProfile"]["dataDisks"]
         if data_disks != None:
-            data_disk = f"{resourceId}-DataDisk"
+            data_disk = f"{resource_id}-DataDisk"
         else:
             data_disk = None
     except:
@@ -146,7 +146,7 @@ def iterate(resource, resource_type, resource_group, sub_id, name, rg_client, rg
         user_assigned_ids = []
     # The principal type and system assigned managed identity
     try:
-        principalId = rg_results_as_dict["data"][0]["identity"][
+        principal_id = rg_results_as_dict["data"][0]["identity"][
             "principalId"
         ]
     except (KeyError, TypeError):
@@ -154,7 +154,7 @@ def iterate(resource, resource_type, resource_group, sub_id, name, rg_client, rg
             print(
                 f"Couldn't find the principal Id of the app service {name}."
             )
-        principalId = None
+        principal_id = None
     try:
         principalType = rg_results_as_dict["data"][0]["identity"]["type"]
     except (KeyError, TypeError):
@@ -165,7 +165,7 @@ def iterate(resource, resource_type, resource_group, sub_id, name, rg_client, rg
         principalType = None
 
     object_to_add = VirtualMachineScaleSet(
-        resourceId=resourceId,
+        resourceId=resource_id,
         name=name,
         os=os,
         osDisk=os_disk,
@@ -175,7 +175,7 @@ def iterate(resource, resource_type, resource_group, sub_id, name, rg_client, rg
         sshKeys=ssh_keys,
         networkInterfaces=network_interface_ids,
         provider=resource_type,
-        principalId=principalId,
+        principalId=principal_id,
         principalType=principalType,
         identityIds=user_assigned_ids,
     )

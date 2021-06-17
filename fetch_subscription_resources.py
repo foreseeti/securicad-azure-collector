@@ -80,8 +80,15 @@ from schema_classes import (
 
 from services import(
     ad_groups,
-    virtualmachines,
+    virtual_machines,
     vmss,
+    key_vault,
+    disks,
+    ssh_public_keys,
+    network_interfaces,
+    network_security_groups,
+    public_ip_addresses,
+    virtual_networks,
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -168,336 +175,41 @@ def iterate_resources_to_json(
             print(
                 f"Cannot get a bearer token for type: {type(credentials)} on scope {scope}. Some azure data cannot be fetched. \n\t {e}"
             )
+    i = 0
     for resource in resources:
         resource_type = resource.type.lower()
         name = resource.name
-        resourceId = resource.id
+        resource_id = resource.id
         # Find resource type, handle accordingly
         json_key = None
         object_to_add = None
+        print(i)
+        i += 1
         if COUNTING:
             supported_asset = True
         try:
             if resource_type == "microsoft.compute/virtualmachines":
-                object_to_add = virtualmachines.iterate(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resourceId, DEBUGGING)
+                object_to_add = virtual_machines.parse_obj(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
                 json_key = "virtualMachines"
 
             elif resource_type == "microsoft.compute/virtualmachinescalesets":
-                object_to_add = vmss.iterate(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resourceId, DEBUGGING)
+                object_to_add = vmss.parse_obj(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
                 json_key = "virtualMachineScaleSets"
 
             elif resource_type == "microsoft.keyvault/vaults":
-                # vaults.iterate.iterate(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resourceId, DEBUGGING)
-                str_query = f"resources | where type=~'Microsoft.Keyvault/vaults' and id == '{resourceId}'"
-                query = arg.models.QueryRequest(
-                    subscriptions=[sub_id], query=str_query, options=rg_query_options,
-                )
-                try:
-                    rg_results_as_dict = rg_client.resources(query=query).__dict__
-                except:
-                    if DEBUGGING:
-                        print(
-                            f"ERROR: Couldn't execute resource graph query of {name}, skipping asset."
-                        )
-                    continue
-                vault_url = rg_results_as_dict["data"][0]["properties"]["vaultUri"]
-                keys = []
-                certificates = []
-                secrets = []
-                kv_components = {}
-                try:
-                    enable_rbac_authorization = rg_results_as_dict["data"][0]["properties"]["enabledForDeployment"]
-                except KeyError:
-                    enable_rbac_authorization = False # Default value
-                kvm_client = KeyVaultManagementClient(
-                    credential=credentials, subscription_id=sub_id
-                )
-                all_access_policies = kvm_client.vaults.get(
-                    resource_group_name=resource_group, vault_name=name
-                ).properties.access_policies
-                principal_data_actions = []
-                for ap in all_access_policies:
-                    permission_dict = {
-                        "certificates": ap.permissions.__dict__.get("certificates"),
-                        "secrets": ap.permissions.__dict__.get("secrets"),
-                        "keys": ap.permissions.__dict__.get("keys"),
-                    }
-                    principal_data_actions.append(
-                        {
-                            "objectId": ap.object_id,
-                            "tenantId": ap.tenant_id,
-                            "permissions": permission_dict,
-                        }
-                    )
-                key_client = kv_KeyClient(vault_url=vault_url, credential=credentials)
-                cert_client = kv_CertificateClient(
-                    vault_url=vault_url, credential=credentials
-                )
-                secret_client = kv_SecretClient(
-                    vault_url=vault_url, credential=credentials
-                )
-                # Default Keys, Certificates and Secrets if access is not given to the data extractor
-                try:
-                    kv_keys = key_client.list_properties_of_keys()
-                    kv_certs = cert_client.list_properties_of_certificates()
-                    kv_secrets = secret_client.list_properties_of_secrets()
-                    kv_components = {kv_keys, kv_certs, kv_secrets}
-                    for item_paged in kv_components or []:
-                        try:
-                            for kv_component in item_paged:
-                                component = KeyVaultComponent(
-                                    resourceId=kv_component._id,
-                                    name=kv_component._vault_id.name,
-                                    enabled=kv_component.enabled,
-                                    collection=kv_component._vault_id.collection,
-                                )
-                                if kv_component._vault_id.collection == "keys":
-                                    keys.append(component.__dict__)
-                                elif (
-                                    kv_component._vault_id.collection == "certificates"
-                                ):
-                                    certificates.append(component.__dict__)
-                                else:
-                                    secrets.append(component.__dict__)
-                        except:
-                            if DEBUGGING:
-                                print(
-                                    f"Insufficient permissions or Firewall rules blocking access to read {name} components."
-                                )
-                            break
-                    kv_components = None
-                    kv_keys, kv_certs, kv_secrets = None, None, None
-                except:
-                    if DEBUGGING:
-                        print(
-                            f"Cannot list components on {name}, controll the access policy for the Security Principal."
-                        )
-                if keys == []:
-                    keys = [
-                        {
-                            "collection": "keys",
-                            "enabled": True,
-                            "id": f"https://{name}.vault.azure.net/keys/default",
-                            "name": "test-component",
-                        },
-                    ]
-                if certificates == []:
-                    certificates = [
-                        {
-                            "collection": "certificates",
-                            "enabled": True,
-                            "id": f"https://{name}.vault.azure.net/certificates/default",
-                            "name": "test-component",
-                        },
-                    ]
-                if secrets == []:
-                    secrets = [
-                        {
-                            "collection": "secrets",
-                            "enabled": True,
-                            "id": f"https://{name}.vault.azure.net/secrets/default",
-                            "name": "test-component",
-                        }
-                    ]
-                try:
-                    purge_protection = rg_results_as_dict["data"][0]["properties"][
-                        "enableSoftDelete"
-                    ]
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Could not get Purge Protection value from Key Vault {name}. Assuming true"
-                        )
-                    purge_protection = True
-                endpoint = f"https://management.azure.com/subscriptions/{sub_id}/resourceGroups/{resource_group}/providers/Microsoft.KeyVault/vaults/{name}?api-version=2019-09-01"
-                try:
-                    resource_explorer_data = requests.get(
-                        url=endpoint, headers=headers
-                    ).json()
-                except:
-                    if DEBUGGING:
-                        print(
-                            f"Error running API call {endpoint}. Could be a bad authentication due to Bearer token."
-                        )
-                    resource_explorer_data = {}
-                try:
-                    vault_properties = resource_explorer_data["properties"]
-                    if vault_properties.get("networkAcls"):
-                        try:
-                            ip_rules = [
-                                x["value"]
-                                for x in vault_properties["networkAcls"]["ipRules"]
-                                or []
-                            ]
-                        except KeyError:
-                            if DEBUGGING:
-                                print(
-                                    f"Couldn't get IP rules of {name}, assuming no specified rules."
-                                )
-                            ip_rules = []
-                        try:
-                            virtual_network_rules = [
-                                x["id"]
-                                for x in vault_properties["networkAcls"][
-                                    "virtualNetworkRules"
-                                ]
-                                or []
-                            ]
-                        except:
-                            if DEBUGGING:
-                                print(
-                                    f"Error while getting vnet rules from {name} running API call {endpoint}"
-                                )
-                            virtual_network_rules = []
-                        try:
-                            restricted_access = (
-                                True
-                                if vault_properties["networkAcls"]["defaultAction"]
-                                == "Deny"
-                                else False
-                            )
-                        except:
-                            if DEBUGGING:
-                                print(
-                                    f"Couldn't find defaultAction on {name}'s network rules, assuming 'Allow'"
-                                )
-                            restricted_access = False
-                    else:
-                        if DEBUGGING:
-                            print(
-                                f"Could not see any netowrkAcl rules for {name}, assuming public internet accessible key vault."
-                            )
-                        ip_rules = []
-                        virtual_network_rules = []
-                        restricted_access = False
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Could not get NetworkAcl properties for Key Vault {name}."
-                        )
-                    ip_rules = []
-                    virtual_network_rules = []
-                    restricted_access = False
-
-                object_to_add = KeyVault(
-                    resourceId=resourceId,
-                    name=name,
-                    resourceGroup=resource_group,
-                    keys=keys,
-                    secrets=secrets,
-                    certificates=certificates,
-                    provider=resource_type,
-                    restrictedAccess=restricted_access,
-                    ipRules=ip_rules,
-                    virtualNetworkRules=virtual_network_rules,
-                    purgeProtection=purge_protection,
-                    accessPolicies=principal_data_actions,
-                    enableRbacAuthorization=enable_rbac_authorization
-                )
-                kv_keys, kv_certs, kv_secrets = None, None, None
+                object_to_add = key_vault.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING, credentials, headers)
                 json_key = "keyVaults"
 
             elif resource_type == "microsoft.compute/disks":
-                managed_by = resource.managed_by
-                os = None
-                str_query = f"resources | where type == 'microsoft.compute/disks' and name == '{name}'"
-                query = arg.models.QueryRequest(
-                    subscriptions=[sub_id], query=str_query, options=rg_query_options,
-                )
-                try:
-                    rg_results_as_dict = rg_client.resources(query=query).__dict__
-                    try:
-                        os = rg_results_as_dict["data"][0]["properties"]["osType"]
-                    except:
-                        os = None
-                except:
-                    os = None
-                kind = (
-                    "OsDisk"
-                    if (os != None or "osdisk" in {name.lower()})
-                    else "DataDisk"
-                )
-                object_to_add = Disk(
-                    resourceId=resourceId,
-                    name=name,
-                    diskType=kind,
-                    managedBy=managed_by,
-                    resourceGroup=resource_group,
-                    os=os,
-                    provider=resource_type,
-                )
+                object_to_add = disks.parse_obj(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id)
                 json_key = "disks"
 
             elif resource_type == "microsoft.compute/sshpublickeys":
-                str_query = f"resources | where type == 'microsoft.compute/sshpublickeys' and name == '{name}'"
-                query = arg.models.QueryRequest(
-                    subscriptions=[sub_id], query=str_query, options=rg_query_options,
-                )
-                try:
-                    rg_results_as_dict = rg_client.resources(query=query).__dict__
-                except:
-                    if DEBUGGING:
-                        print(
-                            f"ERROR: Couldn't execute resource graph query of {name}, skipping asset."
-                        )
-                    continue
-                raw_properties = rg_results_as_dict["data"][0]["properties"]
-
-                public_key = raw_properties["publicKey"]
-
-                object_to_add = SshKey(
-                    resourceId=resourceId,
-                    name=name,
-                    resourceGroup=resource_group,
-                    publicKey=public_key,
-                    provider=resource_type,
-                )
+                object_to_add = ssh_public_keys.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
                 json_key = "sshKeys"
 
             elif resource_type == "microsoft.network/networkinterfaces":
-                str_query = f"resources | where type == 'microsoft.network/networkinterfaces' and name == '{name}'"
-                query = arg.models.QueryRequest(
-                    subscriptions=[sub_id], query=str_query, options=rg_query_options,
-                )
-                try:
-                    rg_results_as_dict = rg_client.resources(query=query).__dict__
-                except:
-                    if DEBUGGING:
-                        print(
-                            f"ERROR: Couldn't execute resource graph query of {name}, skipping asset."
-                        )
-                    continue
-                raw_properties = rg_results_as_dict["data"][0]["properties"]
-                ip_configs = []
-                for ip_config in raw_properties["ipConfigurations"]:
-                    config_name = ip_config["name"]
-                    config_id = ip_config["id"]
-                    ip_config_properties = ip_config.get("properties")
-                    ip_config_properties.setdefault("publicIPAddress", {"id": None})
-                    comined_object = {
-                        "id": config_id,
-                        "name": config_name,
-                        "privateIpAddress": ip_config_properties["privateIPAddress"],
-                        "publicIpAddressId": ip_config_properties[
-                            "publicIPAddress"
-                        ].get("id"),
-                        "subnetId": ip_config_properties.get("subnet").get("id"),
-                    }
-                    ip_configs.append(comined_object)
-                network_security_group = raw_properties.get("networkSecurityGroup")
-                nsg_id = (
-                    network_security_group.get("id") if network_security_group else None
-                )
-
-                object_to_add = NetworkInterface(
-                    resourceId=resourceId,
-                    name=name,
-                    resourceGroup=resource_group,
-                    ipConfigs=ip_configs,
-                    networkSecurityGroupId=nsg_id,
-                    provider=resource_type,
-                )
-                comined_object = None
+                object_to_add = network_interfaces.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
                 json_key = "networkInterfaces"
 
             elif resource_type == "microsoft.network/networksecuritygroups":
@@ -570,7 +282,7 @@ def iterate_resources_to_json(
                 combinedRules = None
 
                 object_to_add = NetworkSecurityGroup(
-                    resourceId=resourceId,
+                    resourceId=resource_id,
                     name=name,
                     resourceGroup=resource_group,
                     inboundSecurityRules=inbound_rules,
@@ -608,7 +320,7 @@ def iterate_resources_to_json(
                 )
 
                 object_to_add = IpAddress(
-                    resourceId=resourceId,
+                    resourceId=resource_id,
                     name=name,
                     resourceGroup=resource_group,
                     address=address,
@@ -657,7 +369,7 @@ def iterate_resources_to_json(
                         name=subnet_name,
                         ipConfigs=ip_configs,
                         addressPrefix=address_prefix,
-                        vnetId=resourceId,
+                        vnetId=resource_id,
                         networkSecurityGroup=nsg,
                     )
                     subnets.append(subnet_class.__dict__)
@@ -671,7 +383,7 @@ def iterate_resources_to_json(
                     }
                     vnet_peerings.append(vnet_peering)
                 object_to_add = Vnet(
-                    resourceId=resourceId,
+                    resourceId=resource_id,
                     name=name,
                     resourceGroup=resource_group,
                     addressSpace=address_space,
@@ -735,7 +447,7 @@ def iterate_resources_to_json(
                 }
 
                 object_to_add = VnetGateway(
-                    gwId=resourceId,
+                    gwId=resource_id,
                     name=name,
                     resourceGroup=resource_group,
                     ipConfigs=ip_configs,
@@ -773,7 +485,7 @@ def iterate_resources_to_json(
                     bgp_setting = None
 
                 object_to_add = LocalNetworkGateway(
-                    gwId=resourceId,
+                    gwId=resource_id,
                     name=name,
                     resourceGroup=resource_group,
                     localNetworkAddressSpace=local_Network_AddressSpace,
@@ -807,7 +519,7 @@ def iterate_resources_to_json(
 
                 if source and target:
                     object_to_add = Connection(
-                        resourceId=resourceId,
+                        resourceId=resource_id,
                         name=name,
                         resourceGroup=resource_group,
                         connectionType=connectionType,
@@ -852,7 +564,7 @@ def iterate_resources_to_json(
                     routes.append(route)
 
                 object_to_add = RouteTable(
-                    resourceId=resourceId,
+                    resourceId=resource_id,
                     name=name,
                     resourceGroup=resource_group,
                     subnets=subnets,
@@ -1022,7 +734,7 @@ def iterate_resources_to_json(
                         pass
 
                 object_to_add = StorageAccount(
-                    resourceId=resourceId,
+                    resourceId=resource_id,
                     name=name,
                     kind=kind,
                     resourceGroup=resource_group,
@@ -1114,7 +826,7 @@ def iterate_resources_to_json(
                     )"""
 
                 object_to_add = CosmosDB(
-                    resourceId=resourceId,
+                    resourceId=resource_id,
                     name=name,
                     resourceGroup=resource_group,
                     provider=resource_type,
@@ -1291,7 +1003,7 @@ def iterate_resources_to_json(
                     pass
 
                 object_to_add = AppService(
-                    resourceId=resourceId,
+                    resourceId=resource_id,
                     name=name,
                     resourceGroup=resource_group,
                     provider=resource_type,
@@ -1326,7 +1038,7 @@ def iterate_resources_to_json(
                 family = raw_sku["family"]
 
                 object_to_add = AppServicePlan(
-                    resourceId=resourceId,
+                    resourceId=resource_id,
                     name=name,
                     resourceGroup=resource_group,
                     provider=resource_type,
@@ -1406,7 +1118,7 @@ def iterate_resources_to_json(
                         }
                         topics.append(topic)
                 object_to_add = ServiceBus(
-                    resourceId=resourceId,
+                    resourceId=resource_id,
                     name=name,
                     resourceGroup=resource_group,
                     provider=resource_type,
@@ -1564,7 +1276,7 @@ def iterate_resources_to_json(
                         firewallRules = firewallRules + temp_firewallRules
 
                 object_to_add = SQLServer(
-                    resourceId=resourceId,
+                    resourceId=resource_id,
                     name=name,
                     resourceGroup=resource_group,
                     provider=resource_type,
@@ -1683,7 +1395,7 @@ def iterate_resources_to_json(
                         }
                         adAdmins.append(adAdmin)
                 object_to_add = MySQLDatabase(
-                    resourceId=resourceId,
+                    resourceId=resource_id,
                     name=name,
                     resourceGroup=resource_group,
                     provider=resource_type,
@@ -1800,7 +1512,7 @@ def iterate_resources_to_json(
                         }
                         adAdmins.append(adAdmin)
                 object_to_add = PostgreSQLDatabase(
-                    resourceId=resourceId,
+                    resourceId=resource_id,
                     name=name,
                     resourceGroup=resource_group,
                     provider=resource_type,
@@ -1894,7 +1606,7 @@ def iterate_resources_to_json(
                         )
                         firewallRules = firewallRules + temp_firewallRules
                 object_to_add = MariaDBDatabase(
-                    resourceId=resourceId,
+                    resourceId=resource_id,
                     name=name,
                     resourceGroup=resource_group,
                     provider=resource_type,
@@ -2051,7 +1763,7 @@ def iterate_resources_to_json(
                     user_assigned_ids = []
 
                 object_to_add = ContainerRegistry(
-                    resourceId=resourceId,
+                    resourceId=resource_id,
                     name=name,
                     resourceGroup=resource_group,
                     provider=resource_type,
@@ -2202,7 +1914,7 @@ def iterate_resources_to_json(
                     tier = "Basic"
 
                 object_to_add = KubernetesCluster(
-                    resourceId=resourceId,
+                    resourceId=resource_id,
                     name=name,
                     resourceGroup=resource_group,
                     provider=resource_type,
@@ -2527,7 +2239,7 @@ def iterate_resources_to_json(
                         except (KeyError, TypeError):
                             pass
                     object_to_add = APIManagement(
-                        resourceId=resourceId,
+                        resourceId=resource_id,
                         name=name,
                         resourceGroup=resource_group,
                         provider=resource_type,
