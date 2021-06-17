@@ -1,7 +1,4 @@
 from schema_classes import RouteTable
-
-
-from schema_classes import RouteTable
 import azure.mgmt.resourcegraph as arg
 
 def parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING) -> RouteTable:

@@ -92,6 +92,7 @@ from services import(
     vnet_gateways,
     local_network_gateways,
     connections,
+    route_tables,
     storage_accounts,
     sites,
     server_farms,
@@ -247,82 +248,11 @@ def iterate_resources_to_json(
                 json_key = "localNetworkGateways"
 
             elif resource_type == "microsoft.network/connections":
-                object_to_add = local_network_gateways.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
-                str_query = f"resources | where type =~ 'Microsoft.Network/connections' and name == '{name}'"
-                query = arg.models.QueryRequest(
-                    subscriptions=[sub_id], query=str_query, options=rg_query_options,
-                )
-                try:
-                    rg_results_as_dict = rg_client.resources(query=query).__dict__
-                except:
-                    if DEBUGGING:
-                        print(
-                            f"ERROR: Couldn't execute resource graph query of {name}, skipping asset."
-                        )
-                    continue
-                raw_properties = rg_results_as_dict["data"][0]["properties"]
-
-                source, target = None, None
-                connectionType = raw_properties["connectionType"]
-                if connectionType == "Vnet2Vnet":
-                    source = raw_properties["virtualNetworkGateway1"]["id"]
-                    target = raw_properties["virtualNetworkGateway2"]["id"]
-                # TODO: Add logic for the other connectionTypes
-
-                if source and target:
-                    object_to_add = Connection(
-                        resourceId=resource_id,
-                        name=name,
-                        resourceGroup=resource_group,
-                        connectionType=connectionType,
-                        source=source,
-                        target=target,
-                        provider=resource_type,
-                    )
-                    json_key = "connections"
+                object_to_add = connections.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
+                json_key = "connections"
 
             elif resource_type == "microsoft.network/routetables":
-                str_query = f"resources | where type =~ 'microsoft.network/routeTables' and name == '{name}'"
-                query = arg.models.QueryRequest(
-                    subscriptions=[sub_id], query=str_query, options=rg_query_options,
-                )
-                try:
-                    rg_results_as_dict = rg_client.resources(query=query).__dict__
-                except:
-                    if DEBUGGING:
-                        print(
-                            f"ERROR: Couldn't execute resource graph query of {name}, skipping asset."
-                        )
-                    continue
-                raw_properties = rg_results_as_dict["data"][0]["properties"]
-
-                subnets = []
-                raw_subnets = (
-                    raw_properties["subnets"] if raw_properties.get("subnets") else []
-                )
-                for raw_subnet in raw_subnets:
-                    subnets.append(raw_subnet["id"])
-                raw_routes = (
-                    raw_properties["routes"] if raw_properties.get("routes") else []
-                )
-                routes = []
-                for raw_route in raw_routes:
-                    route = {
-                        "id": raw_route["id"],
-                        "name": raw_route["name"],
-                        "addressPrefix": raw_route["properties"]["addressPrefix"],
-                        "nextHopType": raw_route["properties"]["nextHopType"],
-                    }
-                    routes.append(route)
-
-                object_to_add = RouteTable(
-                    resourceId=resource_id,
-                    name=name,
-                    resourceGroup=resource_group,
-                    subnets=subnets,
-                    routes=routes,
-                    provider=resource_type,
-                )
+                object_to_add = route_tables.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
                 json_key = "routeTables"
 
             elif resource_type == "microsoft.storage/storageaccounts":
