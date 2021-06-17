@@ -68,8 +68,6 @@ def parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_o
             inbound_rules.append(security_rule.__dict__)
         else:
             outbound_rules.append(security_rule.__dict__)
-    combinedRules = None
-
     object_to_add = NetworkSecurityGroup(
         resourceId=resource_id,
         name=name,
