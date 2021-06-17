@@ -1,7 +1,8 @@
-from schema_classes import StorageAccount
+from schema_classes import StorageAccount, StorageAccountService
 import azure.mgmt.resourcegraph as arg
+from azure.mgmt.storage import StorageManagementClient
 
-def parse_obj(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING) -> StorageAccount:
+def parse_obj(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING, credentials) -> StorageAccount:
     kind = resource.kind
     str_query = f"resources | where type =~ 'microsoft.storage/storageaccounts' and name == '{name}'"
     query = arg.models.QueryRequest(
