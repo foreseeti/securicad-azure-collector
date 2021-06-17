@@ -89,6 +89,20 @@ from services import(
     network_security_groups,
     public_ip_addresses,
     virtual_networks,
+    vnet_gateways,
+    local_network_gateways,
+    connections,
+    storage_accounts,
+    sites,
+    server_farms,
+    namespaces,
+    components,
+    sql_servers,
+    postgresql_servers,
+    mariadb_servers,
+    container_registries,
+    managed_clusters,
+    api_management
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -214,123 +228,14 @@ def iterate_resources_to_json(
 
             elif resource_type == "microsoft.network/networksecuritygroups":
                 object_to_add = network_security_groups.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
-                str_query = f"resources | where type =~ 'Microsoft.Network/networkSecurityGroups' and name == '{name}'"
-                query = arg.models.QueryRequest(
-                    subscriptions=[sub_id], query=str_query, options=rg_query_options,
-                )
-                try:
-                    rg_results_as_dict = rg_client.resources(query=query).__dict__
-                except:
-                    if DEBUGGING:
-                        print(
-                            f"ERROR: Couldn't execute resource graph query of {name}, skipping asset."
-                        )
-                    continue
-                raw_properties = rg_results_as_dict["data"][0]["properties"]
-                subnetIds = []
-                try:
-                    for subnet in raw_properties["subnets"]:
-                        subnetIds.append(subnet["id"])
-                except KeyError:
-                    subnetIds = []
-                inbound_rules, outbound_rules = [], []
-                combinedRules = (
-                    raw_properties["defaultSecurityRules"]
-                    + raw_properties["securityRules"]
-                )
-                for rule in combinedRules:
-                    rule_id = rule["id"]
-                    rule_name = rule["name"]
-                    sourceport = (
-                        rule["properties"]["sourcePortRange"]
-                        if rule["properties"].get("sourcePortRange")
-                        else rule["properties"]["sourcePortRanges"]
-                    )
-                    destport = (
-                        rule["properties"]["destinationPortRange"]
-                        if rule["properties"].get("destinationPortRange")
-                        else rule["properties"]["destinationPortRanges"]
-                    )
-                    protocol = rule["properties"]["protocol"]
-                    source = (
-                        rule["properties"]["sourceAddressPrefix"]
-                        if rule["properties"].get("sourceAddressPrefix")
-                        else rule["properties"]["sourceAddressPrefixes"]
-                    )
-                    destination = (
-                        rule["properties"]["destinationAddressPrefix"]
-                        if rule["properties"].get("destinationAddressPrefix")
-                        else rule["properties"]["destinationAddressPrefixes"]
-                    )
-                    action = rule["properties"]["access"]
-                    direction = rule["properties"]["direction"]
-                    security_rule = SecurityRule(
-                        resourceId=rule_id,
-                        name=rule_name,
-                        source_port=sourceport,
-                        dest_port=destport,
-                        protocol=protocol,
-                        source=source,
-                        destination=destination,
-                        action=action,
-                        direction=direction,
-                        resourceGroup=resource_group,
-                    )
-                    if rule["properties"]["direction"] == "Inbound":
-                        inbound_rules.append(security_rule.__dict__)
-                    else:
-                        outbound_rules.append(security_rule.__dict__)
-                combinedRules = None
-
-                object_to_add = NetworkSecurityGroup(
-                    resourceId=resource_id,
-                    name=name,
-                    resourceGroup=resource_group,
-                    inboundSecurityRules=inbound_rules,
-                    outboundSecurityRules=outbound_rules,
-                    subnetIds=subnetIds,
-                    provider=resource_type,
-                )
-                inbound_rules, outbound_rules = None, None
                 json_key = "networkSecurityGroups"
 
             elif resource_type == "microsoft.network/publicipaddresses":
-                str_query = f"resources | where type =~ 'Microsoft.Network/publicIPAddresses' and name == '{name}'"
-                query = arg.models.QueryRequest(
-                    subscriptions=[sub_id], query=str_query, options=rg_query_options,
-                )
-                try:
-                    rg_results_as_dict = rg_client.resources(query=query).__dict__
-                except:
-                    if DEBUGGING:
-                        print(
-                            f"ERROR: Couldn't execute resource graph query of {name}, skipping asset."
-                        )
-                    continue
-                raw_properties = rg_results_as_dict["data"][0]["properties"]
-
-                address = (
-                    raw_properties["ipAddress"]
-                    if raw_properties.get("ipAddress")
-                    else raw_properties["publicIPAllocationMethod"]
-                )
-                interface_id = (
-                    raw_properties["ipConfiguration"]["id"]
-                    if raw_properties.get("ipConfiguration")
-                    else None
-                )
-
-                object_to_add = IpAddress(
-                    resourceId=resource_id,
-                    name=name,
-                    resourceGroup=resource_group,
-                    address=address,
-                    interfaceId=interface_id,
-                    provider=resource_type,
-                )
+                object_to_add = public_ip_addresses.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
                 json_key = "publicIpAddresses"
 
             elif resource_type == "microsoft.network/virtualnetworks":
+                object_to_add = virtual_networks.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
                 str_query = f"resources | where type =~ 'Microsoft.Network/virtualNetworks' and name == '{name}'"
                 query = arg.models.QueryRequest(
                     subscriptions=[sub_id], query=str_query, options=rg_query_options,
