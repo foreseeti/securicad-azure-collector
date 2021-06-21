@@ -147,5 +147,40 @@ python3 fetch_subscription_resources.py
 
 The program will dump a timestamped ```active_directory_YYYY-mm-dd_HH:MM.json``` file under the `environment_files` directory, and a file called ```application_insights_YYYY-mm-dd_HH:MM.json``` under the same directory if an _application insights_ resource was found within the scope of the provided Azure environment. Again, the ```application_insights.json``` can be used to enrich the model by connecting services that communicate to each other through connection strings / keys. This data file is optional, but we suggest running if you are using App Services and Function Apps that are communicating with Azure backend resources where Managed Identities are not used. Use these files as input for our `securiCAD azure parser`. 
 
+## Parsing the generated data
+Parsing the files can be done with our `azure-resource-parser` repo or by sending the generated .json files to an active enterprise instance using `upload.py`. 
+
+### Using upload.py
+
+```
+python3 upload.py -e /path/to/active_directory.json [-i /path/to/application_insights.json] [-t /path/to/tuningsfile.json] [-p projectname]
+```
+
+The model will be added to enterprise below `projectname` or the `Default` project if none is provided. Scenarios and simulations are also started automatically, depending on the contents of `tuningsfile.json`.
+
+For more information:
+```
+path/to/securicad-azure-collector/upload.py -h
+```
+
+#### Prerequisites 
+To use `upload.py`, create a `conf.ini` at the top level of this directory (`securicad-azure-collector`), with the following format (replace the ip and credentials with your own configuration):
+
+```
+[URL]
+authserviceurl = https://192.168.122.128/api/v1/auth/login
+serviceurl = https://192.168.122.128/modelbuilder
+
+[CERT]
+cacert =
+clientcert =
+clientcertkey =
+
+[AUTH]
+username = user
+password = Password123
+organization = org
+```
+
 ## Docs page
 For additional information regarding usage of this collector and the securiCAD azure solution, please visit our [docs](https://docs.foreseeti.com/docs/integrating-with-azure) page.
