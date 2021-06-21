@@ -1,7 +1,7 @@
 from schema_classes import KubernetesCluster
 import requests
 
-def parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING, headers) -> KubernetesCluster:
+def parse_obj(resource_type, resource_group, sub_id, name, resource_id, DEBUGGING, headers) -> KubernetesCluster:
     endpoint = f"https://management.azure.com/subscriptions/{sub_id}/resourceGroups/{resource_group}/providers/Microsoft.ContainerService/managedClusters/{name}?api-version=2020-03-01"
     resource_response = requests.get(url=endpoint, headers=headers).json()
     raw_properties = resource_response["properties"]
