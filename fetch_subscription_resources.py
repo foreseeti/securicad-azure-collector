@@ -498,532 +498,57 @@ def iterate_resources_to_json(
                 json_key = "mySQLDatabases"
 
             elif resource_type == "microsoft.dbforpostgresql/servers":
-                str_query = f"resources | where type =~ 'microsoft.dbforpostgresql/servers' and name == '{name}'"
-                query = arg.models.QueryRequest(
-                    subscriptions=[sub_id],
-                    query=str_query,
-                    options=rg_query_options,
-                )
-                try:
-                    rg_results_as_dict = rg_client.resources(query=query).__dict__
-                except:
-                    if DEBUGGING:
-                        print(
-                            f"ERROR: Couldn't execute resource graph query of {name}, skipping asset."
-                        )
-                    continue
-                raw_properties = rg_results_as_dict["data"][0]["properties"]
-                try:
-                    privateEndpoints = raw_properties["privateEndpointConnections"]
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find privateEndpointConnections of PostgreSQL database {name}"
-                        )
-                    privateEndpoints = []
-                try:
-                    publicNetworkAccess = raw_properties["publicNetworkAccess"]
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find publicNetworkAccess of PostgreSQL database {name}"
-                        )
-                    publicNetworkAccess = "Disabled"
-
-                # To get firewall data from the resource explorer
-                endpoint = f"https://management.azure.com/subscriptions/{sub_id}/resourceGroups/{resource_group}/providers/Microsoft.DBforPostgreSQL/servers/{name}/firewallRules?api-version=2017-12-01"
-                try:
-                    resource_explorer_data = requests.get(
-                        url=endpoint, headers=headers
-                    ).json()
-                except:
-                    resource_explorer_data = {}
-                    if DEBUGGING:
-                        print(
-                            f"Error running API call {endpoint}. Could be a bad authentication due to Bearer token."
-                        )
-                firewallRules = []
-                raw_firewallRules_data = resource_explorer_data.get("value")
-                if raw_firewallRules_data:
-                    for raw_firewallRule in raw_firewallRules_data:
-                        try:
-                            start_ip_address = raw_firewallRule["properties"][
-                                "startIpAddress"
-                            ]
-                            start_ip_components = raw_firewallRule["properties"][
-                                "startIpAddress"
-                            ].split(".")
-                        except KeyError:
-                            start_ip_address = None
-                            start_ip_components = None
-                            if DEBUGGING:
-                                print(
-                                    f"Could not get start ip from firewall rule {raw_firewallRule} in sql-server {name}."
-                                )
-                        try:
-                            end_ip_address = raw_firewallRule["properties"][
-                                "endIpAddress"
-                            ]
-                            end_ip_components = raw_firewallRule["properties"][
-                                "endIpAddress"
-                            ].split(".")
-                        except KeyError:
-                            end_ip_address = None
-                            end_ip_components = None
-                            if DEBUGGING:
-                                print(
-                                    f"Could not get end ip from firewall rule {raw_firewallRule} in sql-server {name}."
-                                )
-                        temp_firewallRules = __handle_ip_range(
-                            start_ip_components,
-                            end_ip_components,
-                            start_ip_address,
-                            end_ip_address,
-                        )
-                        firewallRules = firewallRules + temp_firewallRules
-                # To get admin data from REST API
-                endpoint = f"https://management.azure.com/subscriptions/{sub_id}/resourceGroups/{resource_group}/providers/Microsoft.DBforPostgreSQL/servers/{name}/administrators?api-version=2017-12-01"
-                try:
-                    resource_explorer_data = requests.get(
-                        url=endpoint, headers=headers
-                    ).json()
-                except:
-                    resource_explorer_data = {}
-                    if DEBUGGING:
-                        print(
-                            f"Error running API call {endpoint}. Could be a bad authentication due to Bearer token."
-                        )
-                adAdmins = []
-                raw_adAdmin_data = resource_explorer_data.get("value")
-                if raw_adAdmin_data:
-                    for raw_adAdmin in raw_adAdmin_data:
-                        adAdmin = {
-                            "id": raw_adAdmin["id"],
-                            "name": raw_adAdmin["name"],
-                            "principalType": raw_adAdmin["type"],
-                            "principalId": raw_adAdmin["properties"]["sid"],
-                        }
-                        adAdmins.append(adAdmin)
-                object_to_add = PostgreSQLDatabase(
-                    resourceId=resource_id,
-                    name=name,
-                    resourceGroup=resource_group,
-                    provider=resource_type,
-                    privateEndpoints=privateEndpoints,
-                    publicNetworkAccess=publicNetworkAccess,
-                    firewallRules=firewallRules,
-                    adAdmins=adAdmins,
+                object_to_add = postgresql_servers.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                    headers,
                 )
                 json_key = "postgreSQLDatabases"
 
             elif resource_type == "microsoft.dbformariadb/servers":
-                str_query = f"resources | where type =~ 'microsoft.dbformariadb/servers' and name == '{name}'"
-                query = arg.models.QueryRequest(
-                    subscriptions=[sub_id],
-                    query=str_query,
-                    options=rg_query_options,
-                )
-                try:
-                    rg_results_as_dict = rg_client.resources(query=query).__dict__
-                except:
-                    if DEBUGGING:
-                        print(
-                            f"ERROR: Couldn't execute resource graph query of {name}, skipping asset."
-                        )
-                    continue
-                raw_properties = rg_results_as_dict["data"][0]["properties"]
-                try:
-                    privateEndpoints = raw_properties["privateEndpointConnections"]
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find privateEndpointConnections of MariaDB database {name}"
-                        )
-                    privateEndpoints = []
-                try:
-                    publicNetworkAccess = raw_properties["publicNetworkAccess"]
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find publicNetworkAccess of MariaDB database {name}"
-                        )
-                    publicNetworkAccess = "Disabled"
-
-                # To get firewall data from the resource explorer
-                endpoint = f"https://management.azure.com/subscriptions/{sub_id}/resourceGroups/{resource_group}/providers/Microsoft.DBforMariaDB/servers/{name}/firewallRules?api-version=2017-12-01"
-                try:
-                    resource_explorer_data = requests.get(
-                        url=endpoint, headers=headers
-                    ).json()
-                except:
-                    resource_explorer_data = {}
-                    if DEBUGGING:
-                        print(
-                            f"Error running API call {endpoint}. Could be a bad authentication due to Bearer token."
-                        )
-                firewallRules = []
-                raw_firewallRules_data = resource_explorer_data.get("value")
-                if raw_firewallRules_data:
-                    for raw_firewallRule in raw_firewallRules_data:
-                        try:
-                            start_ip_address = raw_firewallRule["properties"][
-                                "startIpAddress"
-                            ]
-                            start_ip_components = raw_firewallRule["properties"][
-                                "startIpAddress"
-                            ].split(".")
-                        except KeyError:
-                            start_ip_address = None
-                            start_ip_components = None
-                            if DEBUGGING:
-                                print(
-                                    f"Could not get start ip from firewall rule {raw_firewallRule} in sql-server {name}."
-                                )
-                        try:
-                            end_ip_address = raw_firewallRule["properties"][
-                                "endIpAddress"
-                            ]
-                            end_ip_components = raw_firewallRule["properties"][
-                                "endIpAddress"
-                            ].split(".")
-                        except KeyError:
-                            end_ip_address = None
-                            end_ip_components = None
-                            if DEBUGGING:
-                                print(
-                                    f"Could not get end ip from firewall rule {raw_firewallRule} in sql-server {name}."
-                                )
-                        temp_firewallRules = __handle_ip_range(
-                            start_ip_components,
-                            end_ip_components,
-                            start_ip_address,
-                            end_ip_address,
-                        )
-                        firewallRules = firewallRules + temp_firewallRules
-                object_to_add = MariaDBDatabase(
-                    resourceId=resource_id,
-                    name=name,
-                    resourceGroup=resource_group,
-                    provider=resource_type,
-                    privateEndpoints=privateEndpoints,
-                    publicNetworkAccess=publicNetworkAccess,
-                    firewallRules=firewallRules,
+                object_to_add = mariadb_servers.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                    headers,
                 )
                 json_key = "mariaDBDatabases"
 
             elif resource_type == "microsoft.containerregistry/registries":
-                str_query = f"resources | where type =~ 'microsoft.containerregistry/registries' and name == '{name}'"
-                query = arg.models.QueryRequest(
-                    subscriptions=[sub_id],
-                    query=str_query,
-                    options=rg_query_options,
-                )
-                try:
-                    rg_results_as_dict = rg_client.resources(query=query).__dict__
-                except:
-                    if DEBUGGING:
-                        print(
-                            f"ERROR: Couldn't execute resource graph query of {name}, skipping asset."
-                        )
-                    continue
-                raw_properties = rg_results_as_dict["data"][0]["properties"]
-                # Access Key
-                try:
-                    admin_user_enabled = raw_properties["adminUserEnabled"]
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find adminUserEnabled value of container registry {name}. Assuming disabled."
-                        )
-                    admin_user_enabled = False
-                # Firewall Related
-                try:
-                    public_network_enabled = raw_properties["publicNetworkAccess"]
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find publicNetworkAccess value of container registry {name}. Assuming default value: True."
-                        )
-                    public_network_enabled = "Disabled"  # Is true by default
-                try:
-                    private_endpoints = raw_properties["privateEndpointConnections"]
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find privateEndpointConnections of container registry {name}"
-                        )
-                    private_endpoints = []
-                try:
-                    network_rule_set = raw_properties["networkRuleSet"]
-                    try:
-                        default_action = network_rule_set["defaultAction"]
-                    except KeyError:
-                        if DEBUGGING:
-                            print(
-                                f"Couldn't find defaultActions of networkRuleSet in container registry {name}"
-                            )
-                        default_action = "Deny"
-                    try:
-                        ip_rules = (
-                            network_rule_set.get("ipRules")
-                            if type(network_rule_set.get("ipRules")) == list
-                            else []
-                        )
-                        firewall_rules = [
-                            x["value"] for x in ip_rules if x.get("value") != None
-                        ]
-                    except KeyError:
-                        if DEBUGGING:
-                            print(f"Couldn't find ipRules of container registry {name}")
-                        firewall_rules = []
-                    try:
-                        # Can't seem to be able to set virtual network rules just yet, but the field is within the resource graph, so let's fetch it
-                        virtual_network_rules = network_rule_set["virtualNetworkRules"]
-                    except KeyError:
-                        if DEBUGGING:
-                            print(
-                                f"Couldn't find virtualNetworkRules of container registry {name}"
-                            )
-                        virtual_network_rules = []
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find networkRuleSet of container registry {name}"
-                        )
-                    pass
-                    firewall_rules = []
-                    virtual_network_rules = []
-                    default_action = (
-                        "Allow"  # allowed by default (letting everything through)
-                    )
-                try:
-                    network_rule_bypass_options = raw_properties[
-                        "networkRuleBypassOptions"
-                    ]
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find privateEndpointConnections of container registry {name}"
-                        )
-                    network_rule_bypass_options = "None"
-                # SKU
-                try:
-                    sku = rg_results_as_dict["data"][0]["sku"]
-                    try:
-                        tier = sku["tier"]
-                    except KeyError:
-                        if DEBUGGING:
-                            print(
-                                f"Couldn't find tier value of sku in container registry {name}. assuming Basic tier"
-                            )
-                        tier = "Basic"
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find sku of container registry {name}. assuming Basic tier"
-                        )
-                    tier = "Basic"
-                # The principal type and system assigned managed identity
-                try:
-                    principal_id = rg_results_as_dict["data"][0]["identity"][
-                        "principalId"
-                    ]
-                except (KeyError, TypeError):
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find the principal Id of the container registry {name}."
-                        )
-                    principal_id = None
-                try:
-                    principal_type = rg_results_as_dict["data"][0]["identity"]["type"]
-                except (KeyError, TypeError):
-                    if DEBUGGING and principal_id:
-                        print(
-                            f"Couldn't find the principal type of the container registry {name}."
-                        )
-                    principal_type = None
-                # User assigned managed identity
-                try:
-                    raw_user_assigned_ids = rg_results_as_dict["data"][0]["identity"][
-                        "userAssignedIdentities"
-                    ]
-                    user_assigned_ids = []
-                    for key, identity in raw_user_assigned_ids.items() or []:
-                        user_assigned_ids.append(
-                            {
-                                "identityId": key,
-                                "clientId": identity["clientId"],
-                                "principalId": identity["principalId"],
-                            }
-                        )
-                except (KeyError, TypeError):
-                    user_assigned_ids = []
-
-                object_to_add = ContainerRegistry(
-                    resourceId=resource_id,
-                    name=name,
-                    resourceGroup=resource_group,
-                    provider=resource_type,
-                    adminUserEnabled=admin_user_enabled,
-                    publicNetworkEnabled=public_network_enabled,
-                    privateEndpoints=private_endpoints,
-                    firewallRules=firewall_rules,
-                    virtualNetworkRules=virtual_network_rules,
-                    networkBypassOptions=network_rule_bypass_options,
-                    defaultAction=default_action,
-                    tier=tier,
-                    principalId=principal_id,
-                    principalType=principal_type,
-                    userAssignedIdentities=user_assigned_ids,
+                object_to_add = container_registries.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
                 )
                 json_key = "containerRegistries"
 
             elif resource_type == "microsoft.containerservice/managedclusters":
-                endpoint = f"https://management.azure.com/subscriptions/{sub_id}/resourceGroups/{resource_group}/providers/Microsoft.ContainerService/managedClusters/{name}?api-version=2020-03-01"
-                resource_response = requests.get(url=endpoint, headers=headers).json()
-                raw_properties = resource_response["properties"]
-                # Kubernetes version
-                try:
-                    kubernetes_version = raw_properties["kubernetesVersion"]
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find the kubernetes version of kubernetes cluster {name}, assuming default version."
-                        )
-                    kubernetes_version = "1.18.14"
-                # node pools
-                try:
-                    raw_node_pools = raw_properties["agentPoolProfiles"]
-                    node_pools = [
-                        {
-                            "name": x.get("name"),
-                            "count": x.get("count"),
-                            "nodeType": x.get("type"),
-                            "osType": x.get("osType"),
-                            "kubernetesVersion": x.get("orchestratorVersion"),
-                        }
-                        for x in raw_node_pools
-                    ]
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find the agentPoolProfiles of kubernetes cluster {name}. Assuming a single node profile"
-                        )
-                    node_pools = [
-                        {
-                            "name": "testPool",
-                            "type": "VirtualMachineScaleSets",
-                            "osType": "Linux",
-                            "count": 1,
-                            "kubernetesVersion": kubernetes_version,
-                        }
-                    ]
-                # enableRBAC
-                try:
-                    enable_rbac = raw_properties["enableRBAC"]
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find the enableRBAC value of kubernetes cluster {name}. Assuming false."
-                        )
-                    enable_rbac = False
-                # Firewall Related
-                try:
-                    api_srv_access_profile = raw_properties["apiServerAccessProfile"]
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find the apiServerAccessProfile of kubernetes cluster {name}"
-                        )
-                    api_srv_access_profile = None
-                if api_srv_access_profile:
-                    # IPRanges
-                    try:
-                        authorized_ip_ranges = api_srv_access_profile[
-                            "authorizedIPRanges"
-                        ]
-                    except KeyError:
-                        authorized_ip_ranges = []
-                        if DEBUGGING:
-                            print(
-                                f"Couldn't find the authorizedIPRanges of kubernetes cluster {name}"
-                            )
-                    # enablePrivateCluster
-                    try:
-                        private_cluster = api_srv_access_profile["enablePrivateCluster"]
-                    except KeyError:
-                        private_cluster = False
-                        if DEBUGGING:
-                            print(
-                                f"Couldn't find the enablePrivateCluster of kubernetes cluster {name}, assuming False"
-                            )
-                else:
-                    authorized_ip_ranges = []
-                    private_cluster = False
-                # aadProfile (Admin group)
-                try:
-                    aad_profile = raw_properties["aadProfile"]
-                except KeyError:
-                    aad_profile = None
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find the aad_profile (admin group) of kubernetes cluster {name}."
-                        )
-                if aad_profile:
-                    try:
-                        admin_groups = aad_profile["adminGroupObjectIDs"]
-                    except KeyError:
-                        admin_groups = []
-                    try:
-                        tenant_id = aad_profile["tenantID"]
-                    except KeyError:
-                        tenant_id = None
-                    aad_profile = {"adminGroups": admin_groups, "tenantId": tenant_id}
-                # If managed identity is activated on the resource it has a principal ID
-                try:
-                    principal_id = resource_response["identity"]["principalId"]
-                except:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find a principalId of identity in kubernetes service {name}."
-                        )
-                    principal_id = None
-                try:
-                    principal_type = resource_response["identity"]["type"]
-                except:
-                    principal_type = None
-                # SKU
-                try:
-                    sku = resource_response["sku"]
-                    try:
-                        tier = sku["tier"]
-                    except KeyError:
-                        if DEBUGGING:
-                            print(
-                                f"Couldn't find tier value of sku in kubernetes cluster {name}. assuming Basic tier"
-                            )
-                        tier = "Basic"
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find sku of kubernetes cluster {name}. assuming Basic tier"
-                        )
-                    tier = "Basic"
-
-                object_to_add = KubernetesCluster(
-                    resourceId=resource_id,
-                    name=name,
-                    resourceGroup=resource_group,
-                    provider=resource_type,
-                    kubernetesVersion=kubernetes_version,
-                    nodePools=node_pools,
-                    enableRBAC=enable_rbac,
-                    firewallRules=authorized_ip_ranges,
-                    privateCluster=private_cluster,
-                    tier=tier,
-                    aadProfile=aad_profile,
-                    principalId=principal_id,
-                    principalType=principal_type,
+                object_to_add = managed_clusters.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                    headers,
                 )
                 json_key = "kubernetesClusters"
 
