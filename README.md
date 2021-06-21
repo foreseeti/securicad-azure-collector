@@ -160,7 +160,7 @@ The model will be added to enterprise below `projectname` or the `Default` proje
 
 For more information:
 ```
-path/to/azure-resource-parser/azure_parser/upload.py -h
+path/to/securicad-azure-collector/upload.py -h
 ```
 
 #### Prerequisites 
