@@ -78,7 +78,7 @@ from schema_classes import (
     APIManagement,
 )
 
-from services import(
+from services import (
     ad_groups,
     virtual_machines,
     vmss,
@@ -100,11 +100,12 @@ from services import(
     namespaces,
     components,
     sql_servers,
+    mysql_servers,
     postgresql_servers,
     mariadb_servers,
     container_registries,
     managed_clusters,
-    api_management
+    api_management,
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -205,75 +206,246 @@ def iterate_resources_to_json(
             supported_asset = True
         try:
             if resource_type == "microsoft.compute/virtualmachines":
-                object_to_add = virtual_machines.parse_obj(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
+                object_to_add = virtual_machines.parse_obj(
+                    resource,
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                )
                 json_key = "virtualMachines"
 
             elif resource_type == "microsoft.compute/virtualmachinescalesets":
-                object_to_add = vmss.parse_obj(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
+                object_to_add = vmss.parse_obj(
+                    resource,
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                )
                 json_key = "virtualMachineScaleSets"
 
             elif resource_type == "microsoft.keyvault/vaults":
-                object_to_add = key_vault.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING, credentials, headers)
+                object_to_add = key_vault.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                    credentials,
+                    headers,
+                )
                 json_key = "keyVaults"
 
             elif resource_type == "microsoft.compute/disks":
-                object_to_add = disks.parse_obj(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id)
+                object_to_add = disks.parse_obj(
+                    resource,
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                )
                 json_key = "disks"
 
             elif resource_type == "microsoft.compute/sshpublickeys":
-                object_to_add = ssh_public_keys.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
+                object_to_add = ssh_public_keys.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                )
                 json_key = "sshKeys"
 
             elif resource_type == "microsoft.network/networkinterfaces":
-                object_to_add = network_interfaces.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
+                object_to_add = network_interfaces.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                )
                 json_key = "networkInterfaces"
 
             elif resource_type == "microsoft.network/networksecuritygroups":
-                object_to_add = network_security_groups.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
+                object_to_add = network_security_groups.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                )
                 json_key = "networkSecurityGroups"
 
             elif resource_type == "microsoft.network/publicipaddresses":
-                object_to_add = public_ip_addresses.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
+                object_to_add = public_ip_addresses.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                )
                 json_key = "publicIpAddresses"
 
             elif resource_type == "microsoft.network/virtualnetworks":
-                object_to_add = virtual_networks.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
+                object_to_add = virtual_networks.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                )
                 json_key = "vnets"
 
             elif resource_type == "microsoft.network/virtualnetworkgateways":
-                object_to_add = vnet_gateways.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
+                object_to_add = vnet_gateways.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                )
                 json_key = "vnetGateways"
 
             elif resource_type == "microsoft.network/localnetworkgateways":
-                object_to_add = local_network_gateways.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
+                object_to_add = local_network_gateways.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                )
                 json_key = "localNetworkGateways"
 
             elif resource_type == "microsoft.network/connections":
-                object_to_add = connections.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
+                object_to_add = connections.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                )
                 json_key = "connections"
 
             elif resource_type == "microsoft.network/routetables":
-                object_to_add = route_tables.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
+                object_to_add = route_tables.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                )
                 json_key = "routeTables"
 
             elif resource_type == "microsoft.storage/storageaccounts":
-                object_to_add = storage_accounts.parse_obj(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING, credentials)
+                object_to_add = storage_accounts.parse_obj(
+                    resource,
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                    credentials,
+                )
                 json_key = "storageAccounts"
 
             elif resource_type == "microsoft.documentdb/databaseaccounts":
-                object_to_add = cosmos_databases.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
+                object_to_add = cosmos_databases.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                )
                 json_key = "cosmosDBs"
 
             elif resource_type == "microsoft.web/sites":
-                object_to_add = sites.parse_obj(resource, resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING, headers)
+                object_to_add = sites.parse_obj(
+                    resource,
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                    headers,
+                )
                 json_key = "appServices"
 
             elif resource_type == "microsoft.web/serverfarms":
-                object_to_add = server_farms.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING)
+                object_to_add = server_farms.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                )
                 json_key = "appServicePlans"
 
             elif resource_type == "microsoft.servicebus/namespaces":
-                object_to_add = namespaces.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING, bearer_token)
+                object_to_add = namespaces.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                    bearer_token,
+                )
                 json_key = "serviceBuses"
 
             elif resource_type == "microsoft.insights/components":
@@ -298,131 +470,39 @@ def iterate_resources_to_json(
                         )
 
             elif resource_type == "microsoft.sql/servers":
-                object_to_add = sql_servers.parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING, headers)
+                object_to_add = sql_servers.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                    headers,
+                )
                 json_key = "sqlServers"
 
             elif resource_type == "microsoft.dbformysql/servers":
-                str_query = f"resources | where type =~ 'microsoft.dbformysql/servers' and name == '{name}'"
-                query = arg.models.QueryRequest(
-                    subscriptions=[sub_id], query=str_query, options=rg_query_options,
-                )
-                try:
-                    rg_results_as_dict = rg_client.resources(query=query).__dict__
-                except:
-                    if DEBUGGING:
-                        print(
-                            f"ERROR: Couldn't execute resource graph query of {name}, skipping asset."
-                        )
-                    continue
-                raw_properties = rg_results_as_dict["data"][0]["properties"]
-                try:
-                    privateEndpoints = raw_properties["privateEndpointConnections"]
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find privateEndpointConnections of MySQL database {name}"
-                        )
-                    privateEndpoints = []
-                try:
-                    publicNetworkAccess = raw_properties["publicNetworkAccess"]
-                except KeyError:
-                    if DEBUGGING:
-                        print(
-                            f"Couldn't find publicNetworkAccess of MySQL database {name}, assuming disabled"
-                        )
-                    publicNetworkAccess = "Disabled"
-
-                # To get firewall data from the resource explorer
-                endpoint = f"https://management.azure.com/subscriptions/{sub_id}/resourceGroups/{resource_group}/providers/Microsoft.DBforMySQL/servers/{name}/firewallRules?api-version=2017-12-01"
-                try:
-                    resource_explorer_data = requests.get(
-                        url=endpoint, headers=headers
-                    ).json()
-                except:
-                    resource_explorer_data = {}
-                    if DEBUGGING:
-                        print(
-                            f"Error running API call {endpoint}. Could be a bad authentication due to Bearer token."
-                        )
-                firewallRules = []
-                raw_firewallRules_data = resource_explorer_data.get("value")
-                if raw_firewallRules_data:
-                    for raw_firewallRule in raw_firewallRules_data:
-                        try:
-                            start_ip_address = raw_firewallRule["properties"][
-                                "startIpAddress"
-                            ]
-                            start_ip_components = raw_firewallRule["properties"][
-                                "startIpAddress"
-                            ].split(".")
-                        except KeyError:
-                            start_ip_address = None
-                            start_ip_components = None
-                            if DEBUGGING:
-                                print(
-                                    f"Could not get start ip from firewall rule {raw_firewallRule} in sql-server {name}."
-                                )
-                        try:
-                            end_ip_address = raw_firewallRule["properties"][
-                                "endIpAddress"
-                            ]
-                            end_ip_components = raw_firewallRule["properties"][
-                                "endIpAddress"
-                            ].split(".")
-                        except KeyError:
-                            end_ip_address = None
-                            end_ip_components = None
-                            if DEBUGGING:
-                                print(
-                                    f"Could not get end ip from firewall rule {raw_firewallRule} in sql-server {name}."
-                                )
-                        temp_firewallRules = __handle_ip_range(
-                            start_ip_components,
-                            end_ip_components,
-                            start_ip_address,
-                            end_ip_address,
-                        )
-                        firewallRules = firewallRules + temp_firewallRules
-
-                # To get admin data from REST API
-                endpoint = f"https://management.azure.com/subscriptions/{sub_id}/resourceGroups/{resource_group}/providers/Microsoft.DBforMySQL/servers/{name}/administrators?api-version=2017-12-01"
-                try:
-                    resource_explorer_data = requests.get(
-                        url=endpoint, headers=headers
-                    ).json()
-                except:
-                    resource_explorer_data = {}
-                    if DEBUGGING:
-                        print(
-                            f"Error running API call {endpoint}. Could be a bad authentication due to Bearer token."
-                        )
-                adAdmins = []
-                raw_adAdmin_data = resource_explorer_data.get("value")
-                if raw_adAdmin_data:
-                    for raw_adAdmin in raw_adAdmin_data:
-                        adAdmin = {
-                            "id": raw_adAdmin["id"],
-                            "name": raw_adAdmin["name"],
-                            "principalType": raw_adAdmin["type"],
-                            "principalId": raw_adAdmin["properties"]["sid"],
-                        }
-                        adAdmins.append(adAdmin)
-                object_to_add = MySQLDatabase(
-                    resourceId=resource_id,
-                    name=name,
-                    resourceGroup=resource_group,
-                    provider=resource_type,
-                    privateEndpoints=privateEndpoints,
-                    publicNetworkAccess=publicNetworkAccess,
-                    firewallRules=firewallRules,
-                    adAdmins=adAdmins,
+                object_to_add = mysql_servers.parse_obj(
+                    resource_type,
+                    resource_group,
+                    sub_id,
+                    name,
+                    rg_client,
+                    rg_query_options,
+                    resource_id,
+                    DEBUGGING,
+                    headers,
                 )
                 json_key = "mySQLDatabases"
 
             elif resource_type == "microsoft.dbforpostgresql/servers":
                 str_query = f"resources | where type =~ 'microsoft.dbforpostgresql/servers' and name == '{name}'"
                 query = arg.models.QueryRequest(
-                    subscriptions=[sub_id], query=str_query, options=rg_query_options,
+                    subscriptions=[sub_id],
+                    query=str_query,
+                    options=rg_query_options,
                 )
                 try:
                     rg_results_as_dict = rg_client.resources(query=query).__dict__
@@ -539,7 +619,9 @@ def iterate_resources_to_json(
             elif resource_type == "microsoft.dbformariadb/servers":
                 str_query = f"resources | where type =~ 'microsoft.dbformariadb/servers' and name == '{name}'"
                 query = arg.models.QueryRequest(
-                    subscriptions=[sub_id], query=str_query, options=rg_query_options,
+                    subscriptions=[sub_id],
+                    query=str_query,
+                    options=rg_query_options,
                 )
                 try:
                     rg_results_as_dict = rg_client.resources(query=query).__dict__
@@ -632,7 +714,9 @@ def iterate_resources_to_json(
             elif resource_type == "microsoft.containerregistry/registries":
                 str_query = f"resources | where type =~ 'microsoft.containerregistry/registries' and name == '{name}'"
                 query = arg.models.QueryRequest(
-                    subscriptions=[sub_id], query=str_query, options=rg_query_options,
+                    subscriptions=[sub_id],
+                    query=str_query,
+                    options=rg_query_options,
                 )
                 try:
                     rg_results_as_dict = rg_client.resources(query=query).__dict__
@@ -946,7 +1030,9 @@ def iterate_resources_to_json(
             elif resource_type == "microsoft.apimanagement/service":
                 str_query = f"resources | where type =~ 'microsoft.apimanagement/service' and name == '{name}'"
                 query = arg.models.QueryRequest(
-                    subscriptions=[sub_id], query=str_query, options=rg_query_options,
+                    subscriptions=[sub_id],
+                    query=str_query,
+                    options=rg_query_options,
                 )
                 try:
                     rg_results_as_dict = rg_client.resources(query=query).__dict__
@@ -960,7 +1046,9 @@ def iterate_resources_to_json(
                     raw_properties = rg_results_as_dict["data"][0]["properties"]
                 except IndexError:
                     if DEBUGGING:
-                        print(f"ERROR: Couldn't get resource graph data from apimanagement {name}. Impact: missing infrastructure")
+                        print(
+                            f"ERROR: Couldn't get resource graph data from apimanagement {name}. Impact: missing infrastructure"
+                        )
                     continue
                 try:
                     subnetId = raw_properties["virtualNetworkConfiguration"][
@@ -1397,8 +1485,12 @@ def write_ad_as_json():
             credentials, subscriptionId, api_version="2018-01-01-preview"
         )  # Need two seperate once because one version doesn't support principal_type while the other doesn't contain role_definitions
         role_assignments = amc.role_assignments.list()
-        groups: List[Dict[str, "Group"]] = [] # Will map any principal Group to all its members
-        checked_groups: set = set() #Keeps track of which groups we have checked members for, to not be stuck forever
+        groups: List[
+            Dict[str, "Group"]
+        ] = []  # Will map any principal Group to all its members
+        checked_groups: set = (
+            set()
+        )  # Keeps track of which groups we have checked members for, to not be stuck forever
         for role_assignment in role_assignments:
             role_assignment_dict = role_assignment.__dict__
             if any(
@@ -1420,7 +1512,7 @@ def write_ad_as_json():
                         "actions": perm.actions,
                         "notActions": perm.not_actions,
                         "dataActions": perm.data_actions,
-                        "notDataActions":  perm.not_data_actions
+                        "notDataActions": perm.not_data_actions,
                     }
                     final_permissions.append(permission_to_add)
                 role_to_add = {
@@ -1433,8 +1525,14 @@ def write_ad_as_json():
                     "permissions": final_permissions,
                 }
                 if role_assignment_dict["principal_type"] == "Group":
-                    if not os.environ.get("AZURE_TENANT_ID") or not os.environ.get("AZURE_CLIENT_ID") or not os.environ.get("AZURE_CLIENT_SECRET"):
-                        print(f"ERROR: AZURE environment variable(s) not set. Impact: Cannot read group members of group {role_assignment_dict['principal_id']}. Run python3 fetch_subscription_resources.py -h for more info.")
+                    if (
+                        not os.environ.get("AZURE_TENANT_ID")
+                        or not os.environ.get("AZURE_CLIENT_ID")
+                        or not os.environ.get("AZURE_CLIENT_SECRET")
+                    ):
+                        print(
+                            f"ERROR: AZURE environment variable(s) not set. Impact: Cannot read group members of group {role_assignment_dict['principal_id']}. Run python3 fetch_subscription_resources.py -h for more info."
+                        )
                     else:
                         tenant_id = os.environ.get("AZURE_TENANT_ID")
                         client_id = os.environ.get("AZURE_CLIENT_ID")
@@ -1442,28 +1540,47 @@ def write_ad_as_json():
                             "client_id": os.environ.get("AZURE_CLIENT_ID"),
                             "scope": "https://graph.microsoft.com/.default",
                             "grant_type": "client_credentials",
-                            "client_secret": os.environ.get("AZURE_CLIENT_SECRET")
+                            "client_secret": os.environ.get("AZURE_CLIENT_SECRET"),
                         }
                         graph_headers = {}
-                        graph_res = requests.post(url=f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token",data=auth_data, headers={"Content-Type": "application/x-www-form-urlencoded"})
+                        graph_res = requests.post(
+                            url=f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token",
+                            data=auth_data,
+                            headers={
+                                "Content-Type": "application/x-www-form-urlencoded"
+                            },
+                        )
                         access_token = graph_res.json().get("access_token")
                         try:
-                            graph_headers.update({"Authorization": f"Bearer {access_token}"})
+                            graph_headers.update(
+                                {"Authorization": f"Bearer {access_token}"}
+                            )
                         except:
                             if DEBUGGING:
-                                print(f"ERROR: Couldn't get access_token for Microsoft Graph. Impact: Cannot read group members of group {role_assignment_dict['principal_id']}")
+                                print(
+                                    f"ERROR: Couldn't get access_token for Microsoft Graph. Impact: Cannot read group members of group {role_assignment_dict['principal_id']}"
+                                )
                         nested_groups = [role_assignment_dict["principal_id"]]
-                        while(len(nested_groups) > 0):
+                        while len(nested_groups) > 0:
                             group_id = nested_groups.pop()
-                            if group_id not in checked_groups: # Group membership can be cyclic, we don't want to go on forever
+                            if (
+                                group_id not in checked_groups
+                            ):  # Group membership can be cyclic, we don't want to go on forever
                                 checked_groups.add(group_id)
-                                members = ad_groups.collect_group_memberships(group_id, tenant_id, graph_headers, DEBUGGING)
+                                members = ad_groups.collect_group_memberships(
+                                    group_id, tenant_id, graph_headers, DEBUGGING
+                                )
                                 group_members = []
                                 for member in members:
                                     group_members.append(member)
-                                    if member["memberType"] == "group" and member["id"] not in checked_groups:
+                                    if (
+                                        member["memberType"] == "group"
+                                        and member["id"] not in checked_groups
+                                    ):
                                         nested_groups.append(member["id"])
-                                groups.append({"groupId": group_id, "members": group_members})
+                                groups.append(
+                                    {"groupId": group_id, "members": group_members}
+                                )
                 rbac_roles.append(role_to_add)
     final_json_object["groups"] = groups
     final_json_object["subscriptions"] = subscriptions
@@ -1524,11 +1641,21 @@ def write_ad_as_json():
     resource_groups = None
     # Save Application Insights into a seperate file
     app_insights = final_json_object.get("applicationInsights")
+<<<<<<< HEAD
     timestamp = datetime.datetime.today().strftime('%Y-%m-%d_%H-%M')
+=======
+    timestamp = datetime.datetime.today().strftime("%Y-%m-%d_%H:%M")
+>>>>>>> bfb1c8d... mysql_servers
     if app_insights != None:
         if app_insights != {}:
             with open(
+<<<<<<< HEAD
                 os.path.join(BASE_DIR, f"environment_files/application_insights_{timestamp}.json"),
+=======
+                os.path.join(
+                    BASE_DIR, "environment_files/application_insights_{timestamp}.json"
+                ),
+>>>>>>> 77cc516... mysql_servers
                 "w",
             ) as app_insights_file:
                 json.dump(app_insights, fp=app_insights_file, indent=4, sort_keys=True)
@@ -1536,7 +1663,12 @@ def write_ad_as_json():
         del final_json_object["applicationInsights"]
     # print(json.dumps(obj=final_json_object, indent=4, sort_keys=True))
     with open(
+<<<<<<< HEAD
         os.path.join(BASE_DIR, f"environment_files/active_directory_{timestamp}.json"), "w"
+=======
+        os.path.join(BASE_DIR, "environment_files/active_directory_{timestamp}.json"),
+        "w",
+>>>>>>> 77cc516... mysql_servers
     ) as json_file:
         json.dump(obj=final_json_object, fp=json_file, indent=4, sort_keys=True)
 
@@ -1730,6 +1862,7 @@ def validate_arguments(argv):
         global ASSETS
         COUNTING = True
         ASSETS = {}
+
 
 # converts asset count to json
 # only run with -ca flag

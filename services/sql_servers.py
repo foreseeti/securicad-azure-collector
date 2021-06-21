@@ -1,5 +1,5 @@
 from schema_classes import SQLServer
-from fetch_subscription_resources import handle_ip_range
+import fetch_subscription_resources
 import azure.mgmt.resourcegraph as arg
 import requests
 
@@ -120,7 +120,7 @@ def parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_o
                     print(
                         f"Could not get end ip from firewall rule {raw_firewallRule} in sql-server {name}."
                     )
-            temp_firewallRules = handle_ip_range(
+            temp_firewallRules = fetch_subscription_resources.handle_ip_range(
                 start_ip_components,
                 end_ip_components,
                 start_ip_address,
