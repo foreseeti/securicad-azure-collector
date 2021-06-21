@@ -2,10 +2,10 @@ from schema_classes import ServiceBus
 import azure.mgmt.resourcegraph as arg
 import requests
 
-def parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING, bearer_token):
+def parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING, bearer_token) -> ServiceBus:
     str_query = f"resources | where type =~ 'microsoft.servicebus/namespaces' and name == '{name}'"
     query = arg.models.QueryRequest(
-        subscriptions=[sub_id], query=str_query, options=rg_query_options,
+        subscriptions=[sub_id], query=str_query, options=rg_query_optionst,
     )
     try:
         rg_results_as_dict = rg_client.resources(query=query).__dict__
