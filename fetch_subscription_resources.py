@@ -41,65 +41,36 @@ from typing import Dict, List
 from schema_classes import (
     Subscription,
     ResourceGroup,
-    VirtualMachine,
-    KeyVaultComponent,
-    KeyVault,
-    Disk,
-    SshKey,
-    Subnet,
-    NetworkInterface,
-    NetworkSecurityGroup,
-    SecurityRule,
-    IpAddress,
-    Vnet,
-    StorageAccount,
-    StorageAccountService,
-    VnetGateway,
-    LocalNetworkGateway,
-    RouteTable,
-    Connection,
     ManagementGroup,
-    CosmosDB,
-    AppService,
-    AppServicePlan,
-    ServiceBus,
-    SQLServer,
-    ContainerRegistry,
-    MySQLDatabase,
-    MariaDBDatabase,
-    PostgreSQLDatabase,
-    KubernetesCluster,
-    VirtualMachineScaleSet,
-    APIManagement,
 )
 
 from services import (
+    application_insights,
     ad_groups,
     virtual_machines,
     vmss,
-    key_vault,
+    key_vaults,
     disks,
     ssh_public_keys,
     network_interfaces,
     network_security_groups,
     public_ip_addresses,
-    virtual_networks,
+    vnets,
     vnet_gateways,
     local_network_gateways,
     connections,
     route_tables,
     storage_accounts,
     cosmos_databases,
-    sites,
-    server_farms,
-    namespaces,
-    components,
+    app_services,
+    app_service_plans,
+    service_buses,
     sql_servers,
     mysql_servers,
     postgresql_servers,
     mariadb_servers,
     container_registries,
-    managed_clusters,
+    kubernetes_clusters,
     api_management,
 )
 
@@ -229,7 +200,7 @@ def iterate_resources_to_json(
                 json_key = "virtualMachineScaleSets"
 
             elif resource_type == "microsoft.keyvault/vaults":
-                object_to_add = key_vault.parse_obj(
+                object_to_add = key_vaults.parse_obj(
                     resource_type,
                     resource_group,
                     sub_id,
@@ -309,7 +280,7 @@ def iterate_resources_to_json(
                 json_key = "publicIpAddresses"
 
             elif resource_type == "microsoft.network/virtualnetworks":
-                object_to_add = virtual_networks.parse_obj(
+                object_to_add = vnets.parse_obj(
                     resource_type,
                     resource_group,
                     sub_id,
@@ -402,7 +373,7 @@ def iterate_resources_to_json(
                 json_key = "cosmosDBs"
 
             elif resource_type == "microsoft.web/sites":
-                object_to_add = sites.parse_obj(
+                object_to_add = app_services.parse_obj(
                     resource,
                     resource_type,
                     resource_group,
@@ -417,7 +388,7 @@ def iterate_resources_to_json(
                 json_key = "appServices"
 
             elif resource_type == "microsoft.web/serverfarms":
-                object_to_add = server_farms.parse_obj(
+                object_to_add = app_service_plans.parse_obj(
                     resource_type,
                     resource_group,
                     sub_id,
@@ -430,7 +401,7 @@ def iterate_resources_to_json(
                 json_key = "appServicePlans"
 
             elif resource_type == "microsoft.servicebus/namespaces":
-                object_to_add = namespaces.parse_obj(
+                object_to_add = service_buses.parse_obj(
                     resource_type,
                     resource_group,
                     sub_id,
@@ -444,11 +415,12 @@ def iterate_resources_to_json(
                 json_key = "serviceBuses"
 
             elif resource_type == "microsoft.insights/components":
-                app_insights_dump = __get_application_insights(
+                app_insights_dump = application_insights.get_application_insights(
                     sub_id=sub_id,
                     rsg_name=resource_group,
                     app_insight_name=name,
                     headers=headers,
+                    DEBUGGING=DEBUGGING,
                 )
                 if app_insights_dump != None:
                     try:
@@ -534,7 +506,7 @@ def iterate_resources_to_json(
                 json_key = "containerRegistries"
 
             elif resource_type == "microsoft.containerservice/managedclusters":
-                object_to_add = managed_clusters.parse_obj(
+                object_to_add = kubernetes_clusters.parse_obj(
                     resource_type,
                     resource_group,
                     sub_id,
@@ -872,90 +844,6 @@ def write_ad_as_json():
 >>>>>>> 77cc516... mysql_servers
     ) as json_file:
         json.dump(obj=final_json_object, fp=json_file, indent=4, sort_keys=True)
-
-
-def handle_ip_range(
-    start_ip_components: list,
-    end_ip_components: list,
-    start_ip_address: str,
-    end_ip_address: str,
-) -> list:
-    firewallRules = []
-    octet_start_one = int(start_ip_components[0])
-    octet_end_one = int(end_ip_components[0])
-    octet_start_two = int(start_ip_components[1])
-    octet_end_two = int(end_ip_components[1])
-    octet_start_three = int(start_ip_components[2])
-    octet_end_three = int(end_ip_components[2])
-    octet_start_four = int(start_ip_components[3])
-    octet_end_four = int(end_ip_components[3])
-    rangegap1 = octet_end_one - octet_start_one
-    rangegap2 = octet_end_two - octet_start_two
-    rangegap3 = octet_end_three - octet_start_three
-    rangegap4 = octet_end_four - octet_start_four
-    if start_ip_address == end_ip_address:
-        ip = start_ip_address
-        firewallRules.append(ip)
-    elif rangegap4 < 10 and rangegap1 == 0 and rangegap2 == 0 and rangegap3 == 0:
-        for i in range(octet_start_one, octet_end_one + 1):
-            for j in range(octet_start_two, octet_end_two + 1):
-                for x in range(octet_start_three, octet_end_three + 1):
-                    for z in range(octet_start_four, octet_end_four + 1):
-                        ip = f"{i}.{j}.{x}.{z}"
-                        firewallRules.append(ip)
-    elif start_ip_address and end_ip_address:
-        ip = start_ip_address + " - " + end_ip_address
-        firewallRules.append(ip)
-    return firewallRules
-
-
-def __get_application_insights(sub_id, rsg_name, app_insight_name, headers) -> dict:
-    today = datetime.datetime.today()
-    timedelta = datetime.timedelta(days=90)  # 90 days ago by default
-    start = today - timedelta
-    timespan = f"{start.isoformat()}/{today.isoformat()}"
-    valid_environment_variable = False
-    try:
-        app_insight_interval = os.environ["APP_INSIGHTS_INTERVAL"]
-        iso_date = "\d{4}(-\d{2}){2}(T(\d{2}:)((\d{2})|(\d{2}:\d{2}))(\.\d{1,3})?)?"
-        pattern = re.compile(f"^{iso_date}\/{iso_date}$")
-        if not pattern.search(app_insight_interval):
-            if DEBUGGING:
-                print(
-                    f"APP_INSIGHTS_INTERVAL has wrong format, run program with -h for detailed information. Setting standard time interval for application insights topology dump."
-                )
-        else:
-            valid_environment_variable = True
-            # Still need to check for valid range (e.g. days = 32 is not valid)
-            splitted_date = timespan.split("/")
-            for date in splitted_date:
-                try:
-                    datetime.datetime.fromisoformat(date)
-                except ValueError as e:
-                    if DEBUGGING:
-                        print(
-                            f"APP_INSIGHTS_INTERVAL has numerical values that exceeds the allowed limit. Assuming normal timespan. \n\t Error: {e}."
-                        )
-                    valid_environment_variable = False
-
-    except:
-        if DEBUGGING:
-            print(
-                f"APP_INSIGHTS_INTERVAL not set, run program with -h for detailed information. Setting standard time interval for application insights topology dump."
-            )
-        app_insight_interval = None
-    if valid_environment_variable:
-        timespan = app_insight_interval if app_insight_interval else timespan
-    endpoint = f"https://management.azure.com/subscriptions/{sub_id}/resourcegroups/{rsg_name}/providers/microsoft.insights/components/{app_insight_name}/providers/microsoft.insights/topology?timespan={timespan}&api-version=2019-10-17-preview&depth=1"
-    try:
-        app_insights_data = requests.get(url=endpoint, headers=headers).json()
-    except:
-        if DEBUGGING:
-            print(
-                f"Error running API call {endpoint}. Could be a bad authentication due to Bearer token."
-            )
-        app_insights_data = None
-    return app_insights_data
 
 
 def __extract_management_groups(management_group_id, management_group_name, headers):

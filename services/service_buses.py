@@ -5,7 +5,7 @@ import requests
 def parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING, bearer_token) -> ServiceBus:
     str_query = f"resources | where type =~ 'microsoft.servicebus/namespaces' and name == '{name}'"
     query = arg.models.QueryRequest(
-        subscriptions=[sub_id], query=str_query, options=rg_query_optionst,
+        subscriptions=[sub_id], query=str_query, options=rg_query_options,
     )
     try:
         rg_results_as_dict = rg_client.resources(query=query).__dict__
