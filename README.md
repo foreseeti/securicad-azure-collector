@@ -156,7 +156,7 @@ Parsing the files can be done with our `azure-resource-parser` repo or by sendin
 python3 upload.py -e /path/to/active_directory.json [-i /path/to/application_insights.json] [-t /path/to/tuningsfile.json] [-p projectname]
 ```
 
-The model will be added to enterprise below projectname or the `Default` project if none is provided. Scenarios and simulations are also started automatically, depending on the contents of tuningsfile.json.
+The model will be added to enterprise below `projectname` or the `Default` project if none is provided. Scenarios and simulations are also started automatically, depending on the contents of `tuningsfile.json`.
 
 For more information:
 ```
