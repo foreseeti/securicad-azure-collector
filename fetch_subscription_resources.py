@@ -158,7 +158,6 @@ def iterate_resources_to_json(
             print(
                 f"Cannot get a bearer token for type: {type(credentials)} on scope {scope}. Some azure data cannot be fetched. \n\t {e}"
             )
-    i = 0
     for resource in resources:
         resource_type = resource.type.lower()
         name = resource.name
@@ -166,8 +165,6 @@ def iterate_resources_to_json(
         # Find resource type, handle accordingly
         json_key = None
         object_to_add = None
-        print(i)
-        i += 1
         if COUNTING:
             supported_asset = True
         try:
