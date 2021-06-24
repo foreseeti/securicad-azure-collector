@@ -63,4 +63,4 @@ def parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_o
         capacity=capacity,
         provider=resource_type,
     )
-    return VnetGateway
+    return object_to_add
