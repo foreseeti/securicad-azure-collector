@@ -1,5 +1,7 @@
 import datetime
 import requests
+import re
+import os
 
 
 def get_application_insights(sub_id, rsg_name, app_insight_name, headers, DEBUGGING) -> dict:
