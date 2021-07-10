@@ -1,0 +1,26 @@
+name: Running the collector script on test environment
+
+on: [pull_request]
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps: 
+
+      - name: Fetching the latest securicad-azure-collector master
+        uses: actions/checkout@v2
+        with:
+          repository: foreseeti/securicad-azure-collector
+          ref: 'master'
+          token: ${{ secrets.GYLLINGEN_PAT }}
+          path: securicad-azure-collector
+
+      - run: |
+          cd securicad-azure-collector
+          export AZURE_TENANT_ID=${{ secrets.AZURE_TENANT_ID }}
+          export AZURE_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          export AZURE_CLIENT_SECRET=${{ secrets.AZURE_CLIENT_SECRET }}
+          export AZURE_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}
+          pip3 install -r requirements.txt
+          mkdir -p environment_files
+          python3 fetch_subscription_resources.py -D
