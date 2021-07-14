@@ -532,7 +532,7 @@ def iterate_resources_to_json(
             try:
                 hva_tag = tags["scad"]
                 hva_tags = hva_tagging.handle_hva_tag(
-                    hva_tag=hva_tag, resource_id=resource_id
+                    hva_tag=hva_tag, resource_id=resource_id, debugging=DEBUGGING
                 )
                 try:
                     json_representation["hva_tags"].append(hva_tags.__dict__)
