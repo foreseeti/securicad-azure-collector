@@ -837,13 +837,6 @@ def write_ad_as_json():
         # Don't want to include application insights in standard environment parsing (should be optional to enrich model)
         del final_json_object["applicationInsights"]
     # print(json.dumps(obj=final_json_object, indent=4, sort_keys=True))
-    try:
-        print(
-            "Final obj:",
-            final_json_object["hva_tagging"],
-        )
-    except KeyError:
-        pass
     with open(
         os.path.join(BASE_DIR, f"environment_files/active_directory_{timestamp}.json"),
         "w",
