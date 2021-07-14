@@ -72,6 +72,7 @@ from services import (
     container_registries,
     kubernetes_clusters,
     api_management,
+    hva_tagging,
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -160,6 +161,7 @@ def iterate_resources_to_json(
             )
     for resource in resources:
         resource_type = resource.type.lower()
+        tags = resource.tags
         name = resource.name
         resource_id = resource.id
         # Find resource type, handle accordingly
@@ -527,6 +529,17 @@ def iterate_resources_to_json(
                     headers,
                 )
                 json_key = "apiManagements"
+            try:
+                hva_tag = tags["scad"]
+                hva_tags = hva_tagging.handle_hva_tag(
+                    hva_tag=hva_tag, resource_id=resource_id
+                )
+                try:
+                    json_representation["hva_tags"].append(hva_tags.__dict__)
+                except (KeyError, AttributeError):
+                    json_representation["hva_tags"] = [hva_tags.__dict__]
+            except KeyError:
+                pass
             else:
                 if COUNTING:
                     supported_asset = False
@@ -753,6 +766,7 @@ def write_ad_as_json():
     final_json_object["groups"] = groups
     final_json_object["subscriptions"] = subscriptions
     final_json_object["roleAssignments"] = rbac_roles
+
     subscriptions, rbac_roles = None, None
 
     rg_client = arg.ResourceGraphClient(credentials)
@@ -805,23 +819,34 @@ def write_ad_as_json():
                 for entry in obtained_local_list:
                     existing_final_list.append(entry)
                 final_json_object[key] = existing_final_list
+
     final_json_object["resourceGroups"] = resource_groups
     resource_groups = None
     # Save Application Insights into a seperate file
     app_insights = final_json_object.get("applicationInsights")
-    timestamp = datetime.datetime.today().strftime('%Y-%m-%d_%H-%M')
+    timestamp = datetime.datetime.today().strftime("%Y-%m-%d_%H-%M")
     if app_insights != None:
         if app_insights != {}:
             with open(
-                os.path.join(BASE_DIR, f"environment_files/application_insights_{timestamp}.json"),
+                os.path.join(
+                    BASE_DIR, f"environment_files/application_insights_{timestamp}.json"
+                ),
                 "w",
             ) as app_insights_file:
                 json.dump(app_insights, fp=app_insights_file, indent=4, sort_keys=True)
         # Don't want to include application insights in standard environment parsing (should be optional to enrich model)
         del final_json_object["applicationInsights"]
     # print(json.dumps(obj=final_json_object, indent=4, sort_keys=True))
+    try:
+        print(
+            "Final obj:",
+            final_json_object["hva_tagging"],
+        )
+    except KeyError:
+        pass
     with open(
-        os.path.join(BASE_DIR, f"environment_files/active_directory_{timestamp}.json"), "w"
+        os.path.join(BASE_DIR, f"environment_files/active_directory_{timestamp}.json"),
+        "w",
     ) as json_file:
         json.dump(obj=final_json_object, fp=json_file, indent=4, sort_keys=True)
 
