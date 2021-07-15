@@ -781,8 +781,16 @@ class Group:
 
 
 class HVA_Tag:
-    def __init__(self, resourceId, confValue, integrityValue, availValue) -> None:
-        self.id = resourceId
-        self.confValue = confValue
-        self.integrityValue = integrityValue
-        self.availValue = availValue
+    def __init__(
+        self: str,
+        resourceId: str,
+        className: str,
+        confValue: str,
+        integrityValue: str,
+        availValue: str,
+    ) -> None:
+        self.id: str = resourceId
+        self.className: str = className
+        self.confValue: str = confValue
+        self.integrityValue: str = integrityValue
+        self.availValue: str = availValue
