@@ -785,12 +785,12 @@ class HVA_Tag:
         self: str,
         resourceId: str,
         className: str,
-        confValue: str,
-        integrityValue: str,
-        availValue: str,
+        confValue: int,
+        integrityValue: int,
+        availValue: int,
     ) -> None:
         self.id: str = resourceId
         self.className: str = className
-        self.confValue: str = confValue
-        self.integrityValue: str = integrityValue
-        self.availValue: str = availValue
+        self.confValue: int = confValue
+        self.integrityValue: int = integrityValue
+        self.availValue: int = availValue
