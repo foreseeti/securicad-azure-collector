@@ -784,13 +784,11 @@ class HVA_Tag:
     def __init__(
         self: str,
         resourceId: str,
-        className: str,
         confValue: int,
         integrityValue: int,
         availValue: int,
     ) -> None:
         self.id: str = resourceId
-        self.className: str = className
         self.confValue: int = confValue
         self.integrityValue: int = integrityValue
         self.availValue: int = availValue
