@@ -527,16 +527,14 @@ def iterate_resources_to_json(
                     headers,
                 )
                 json_key = "apiManagements"
-
-            if object_to_add is None:
-                continue
             else:
                 if COUNTING:
                     supported_asset = False
             if COUNTING:
                 count = ASSETS.get(resource_type, (0, supported_asset))[0]
                 ASSETS[resource_type] = (count + 1, supported_asset)
-            # elif resource_type == "Microsoft.Network/networkWatchers":
+            if object_to_add is None:
+                continue
             if json_key not in ["", None]:
                 try:
                     json_representation[json_key].append(object_to_add.__dict__)
