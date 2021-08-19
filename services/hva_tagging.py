@@ -15,19 +15,19 @@ def handle_hva_tag(
             except ValueError:
                 if debugging:
                     print(
-                        f"HVA value '{string[1]}' for resource '{resource_id}' should be numeric but isn't. Skipping assignment."
+                        f"ERROR: HVA value '{string[1]}' for resource '{resource_id}' should be numeric but isn't. Skipping assignment."
                     )
                     continue
             if number > 10:
                 if debugging:
                     print(
-                        f"HVA consequence cannot be above 10, but resource '{resource_id}' is assigned {number}. Defaulting consequence to 10."
+                        f"ERROR: HVA consequence cannot be above 10, but resource '{resource_id}' is assigned {number}. Defaulting consequence to 10."
                     )
                 number = 10
             elif number < 0:
                 if debugging:
                     print(
-                        f"HVA consequence cannot be below 0, but resource '{resource_id}' is assigned {number}. Defaulting consequence to 0."
+                        f"ERROR: HVA consequence cannot be below 0, but resource '{resource_id}' is assigned {number}. Defaulting consequence to 0."
                     )
                 number = 0
             if category.lower() == "c":
@@ -39,12 +39,13 @@ def handle_hva_tag(
             else:
                 if debugging:
                     print(
-                        f"Incorrectly formatted HVA tag: {hva_tag}. Valid prefixes are only c, i or a (case-insensitive)."
+                        f"ERROR: Incorrectly formatted HVA tag: {hva_tag}. Valid prefixes are only c, i or a (case-insensitive)."
                     )
-        except IndexError:
+        except IndexError as e:
             if debugging:
                 print(
-                    f"Parsing HVA tag {component} resulted in IndexError. Make sure each pair is formatted as 'prefix:suffix' and separated by a comma."
+                    f"WARNING: Parsing HVA tag {component} resulted in IndexError. Make sure each pair is formatted as 'prefix:suffix' and separated by a comma."
+                    + e
                 )
     return HVA_Tag(
         resourceId=resource_id,
