@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 class Subscription:
     def __init__(self, resourceId, name, subscriptionId, authorizationSource):
         """Required: \n
@@ -146,9 +147,17 @@ class VnetGateway:
         self.capacity = capacity
         self.provider = provider
 
+
 class LocalNetworkGateway:
     def __init__(
-        self, gwId, name, resourceGroup, localNetworkAddressSpace, gatewayIp, provider, bgpSettings
+        self,
+        gwId,
+        name,
+        resourceGroup,
+        localNetworkAddressSpace,
+        gatewayIp,
+        provider,
+        bgpSettings,
     ):
         self.id = gwId
         self.name = name
@@ -157,6 +166,7 @@ class LocalNetworkGateway:
         self.gatewayIp = gatewayIp
         self.provider = provider
         self.bgpSettings = bgpSettings
+
 
 class Connection:
     def __init__(
@@ -379,7 +389,14 @@ class Subnet:
 
 class Vnet:
     def __init__(
-        self, resourceId, name, resourceGroup, addressSpace, subnets, provider, vnetPeerings
+        self,
+        resourceId,
+        name,
+        resourceGroup,
+        addressSpace,
+        subnets,
+        provider,
+        vnetPeerings,
     ):
         """Required: \n
         resourceId, name, resourceGroup, addressSpace, subnets
@@ -521,7 +538,7 @@ class AppService:
         self.provider = provider
         self.principalId = principalId
         self.principalType = principalType
-        self.userAssignedIdentities=userAssignedIdentities
+        self.userAssignedIdentities = userAssignedIdentities
         self.kind = kind
         self.privateEndpoints = privateEndpoints
         self.outboundAddresses = outboundAddresses
@@ -756,11 +773,22 @@ class APIManagement:
         self.apiManagementUsers = apiManagementUsers
         self.apiManagementSubscriptions = apiManagementSubscriptions
 
+
 class Group:
-    def __init__(
-        self,
-        groupId,
-        members
-    ):
+    def __init__(self, groupId, members):
         self.groupId = groupId
         self.members = members
+
+
+class HVA_Tag:
+    def __init__(
+        self: str,
+        resourceId: str,
+        confValue: int,
+        integrityValue: int,
+        availValue: int,
+    ) -> None:
+        self.id: str = resourceId
+        self.confValue: int = confValue
+        self.integrityValue: int = integrityValue
+        self.availValue: int = availValue
