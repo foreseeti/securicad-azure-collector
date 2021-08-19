@@ -44,8 +44,7 @@ def handle_hva_tag(
         except IndexError as e:
             if debugging:
                 print(
-                    f"WARNING: Parsing HVA tag {component} resulted in IndexError. Make sure each pair is formatted as 'prefix:suffix' and separated by a comma."
-                    + e
+                    f"WARNING: Parsing HVA tag {component} resulted in IndexError. Make sure each pair is formatted as 'prefix:suffix' and separated by a comma. \n Error message: {e}"
                 )
     return HVA_Tag(
         resourceId=resource_id,
