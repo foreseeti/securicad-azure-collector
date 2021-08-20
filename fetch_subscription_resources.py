@@ -647,6 +647,7 @@ def write_ad_as_json():
     # Subscription objects generation
     subscriptions = []
     rbac_roles = []
+    groups: List[Dict[str, "Group"]] = [] # Will map any principal Group to all its members
     for sub in ad_subscriptions["subsRaw"]:
         name = sub.get("display_name")
         subscriptionId = sub.get("subscription_id")
@@ -668,12 +669,7 @@ def write_ad_as_json():
             credentials, subscriptionId, api_version="2018-01-01-preview"
         )  # Need two seperate once because one version doesn't support principal_type while the other doesn't contain role_definitions
         role_assignments = amc.role_assignments.list()
-        groups: List[
-            Dict[str, "Group"]
-        ] = []  # Will map any principal Group to all its members
-        checked_groups: set = (
-            set()
-        )  # Keeps track of which groups we have checked members for, to not be stuck forever
+        checked_groups: set = set() #Keeps track of which groups we have checked members for, to not be stuck forever
         for role_assignment in role_assignments:
             role_assignment_dict = role_assignment.__dict__
             if any(

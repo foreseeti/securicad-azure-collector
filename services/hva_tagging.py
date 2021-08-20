@@ -1,9 +1,7 @@
 from schema_classes import HVA_Tag
 
 
-def handle_hva_tag(
-    hva_tag: str, resource_id: str, class_name: str, debugging: bool
-) -> HVA_Tag:
+def handle_hva_tag(hva_tag: str, resource_id: str, debugging: bool) -> HVA_Tag:
     components = hva_tag.split(",")
     c_val, i_val, a_val = 0, 0, 0
     for component in components:
@@ -48,7 +46,6 @@ def handle_hva_tag(
                 )
     return HVA_Tag(
         resourceId=resource_id,
-        className=class_name,
         confValue=c_val,
         integrityValue=i_val,
         availValue=a_val,
