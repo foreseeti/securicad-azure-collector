@@ -7,11 +7,10 @@ jobs:
     runs-on: ubuntu-latest
     steps: 
 
-      - name: Fetching the latest securicad-azure-collector master
+      - name: Checking out the securicad-azure-collector branch
         uses: actions/checkout@v2
         with:
           repository: foreseeti/securicad-azure-collector
-          ref: 'master'
           token: ${{ secrets.GITHUB_TOKEN }}
           path: securicad-azure-collector
 
