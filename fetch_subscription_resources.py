@@ -161,7 +161,7 @@ def iterate_resources_to_json(
             )
     for resource in resources:
         resource_type = resource.type.lower()
-        tags = resource.tags
+        tags = resource.tags if hasattr(resource, 'tags') else dict()
         name = resource.name
         resource_id = resource.id
         # Find resource type, handle accordingly
@@ -529,25 +529,26 @@ def iterate_resources_to_json(
                     headers,
                 )
                 json_key = "apiManagements"
-            try:
-                hva_tag = tags["scad"]
-                hva_tags = hva_tagging.handle_hva_tag(
-                    hva_tag=hva_tag,
-                    resource_id=resource_id.lower(),
-                    debugging=DEBUGGING,
-                )
-                try:
-                    json_representation["hva_tags"].append(hva_tags.__dict__)
-                except (KeyError, AttributeError):
-                    json_representation["hva_tags"] = [hva_tags.__dict__]
-            except KeyError:
-                pass
+            
             else:
                 if COUNTING:
                     supported_asset = False
             if COUNTING:
                 count = ASSETS.get(resource_type, (0, supported_asset))[0]
                 ASSETS[resource_type] = (count + 1, supported_asset)
+            # Getting the potential scad tag on the object
+            if isinstance(tags, dict):
+                if tags.get("scad"):
+                    hva_tag = tags["scad"]
+                    hva_tags = hva_tagging.handle_hva_tag(
+                        hva_tag=hva_tag,
+                        resource_id=resource_id.lower(),
+                        debugging=DEBUGGING,
+                    )
+                    try:
+                        json_representation["hva_tags"].append(hva_tags.__dict__)
+                    except (KeyError, AttributeError):
+                        json_representation["hva_tags"] = [hva_tags.__dict__]
             if object_to_add is None:
                 continue
             if json_key not in ["", None]:
