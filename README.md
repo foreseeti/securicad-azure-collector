@@ -5,6 +5,10 @@
 
 The extractor program needs to assume the identity of a security principal assigned a Reader role on a subscription level to be able to extract your environment. We suggest you either register a new application under ___App registrations___ in the Azure Active Directory to create a new Service Principal, or by assigning a system wide ___Managed Identity___ for an azure virtual machine (possibly the same machine running securiCAD Enterprise) and give the security principal this permission. The first option is required if you are running locally. 
 
+## Granting Active Directory Group Member Read.
+
+It's ideal to allow the collector to read Active Directory Group members of the groups that have an IAM assignment within the Azure cloud. This will allow the model to connect the security principals that belong to the group within the model. To do this click on **API permissions** on the **App Registration** dashboard and grant it the GroupMember.Read.All permission by clicking **Add a permission** > **Microsoft.Graph** > **Application Permissions** > **GroupMember.Read.All** . Note that an **Active Directory Admin** will have to approve this permission for this API permission to be granted.  
+
 ## Optional roles
 
 Below are optional role assignments / access policies you may give your security principal to enrich the model with additional information.
