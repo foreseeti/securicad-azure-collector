@@ -152,7 +152,7 @@ python3 fetch_subscription_resources.py
 The program will dump a timestamped ```active_directory_YYYY-mm-dd_HH:MM.json``` file under the `environment_files` directory, and a file called ```application_insights_YYYY-mm-dd_HH:MM.json``` under the same directory if an _application insights_ resource was found within the scope of the provided Azure environment. Again, the ```application_insights.json``` can be used to enrich the model by connecting services that communicate to each other through connection strings / keys. This data file is optional, but we suggest running if you are using App Services and Function Apps that are communicating with Azure backend resources where Managed Identities are not used. Use these files as input for our `securiCAD azure parser`. 
 
 ## Parsing the generated data
-Parsing the files can be done with our `azure-resource-parser` repo or by sending the generated .json files to an active enterprise instance using `upload.py`. 
+Parsing the files can be done with our `azure-resource-parser` repo or by sending the generated .json files to an active enterprise instance using the secruciad-enterprise-sdk, like `tools/upload.py`. 
 
 ### Using upload.py
 
@@ -164,7 +164,7 @@ The model will be added to enterprise below `projectname` or the `Default` proje
 
 For more information:
 ```
-path/to/securicad-azure-collector/upload.py -h
+path/to/securicad-azure-collector/tools/upload.py -h
 ```
 
 #### Prerequisites 
