@@ -175,6 +175,7 @@ def upload_json(
         model=model,
         model_info=res,
     )
+    log(f"Done")
 
 
 def __apply_tunings(tunings, es_client, project, model, model_info):
@@ -204,7 +205,7 @@ def __apply_tunings(tunings, es_client, project, model, model_info):
             scenario = create_scenario(
                 es_client=es_client, name=scenario_name, project=project, model_info=model_info, tunings=tuning_objects
             )
-    log(f"Done")
+
 
 
 def create_simulation(es_client: "Client", scenario: "Scenario", name: "Project", model: "Model", tunings: List["Tuning"]):
