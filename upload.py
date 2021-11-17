@@ -1,19 +1,8 @@
 # Copyright 2020-2021 Foreseeti AB <https://foreseeti.com>
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# This file showcases how you can use securicad enterprise SDK to upload and simulate your azure environment 
+# by data files from the securicad-azure-collector or .sCAD models from azure-resource-parser
 
-from securicad import enterprise
-from securicad.enterprise import organizations
+from securicad.enterprise.client import Client # type: ignore pylint: disable=import-error
 from pathlib import Path
 from typing import TYPE_CHECKING, Tuple, Optional, List, Dict, Any
 import configparser
@@ -21,13 +10,12 @@ import argparse
 from datetime import datetime
 import logging
 import json
-import io
+import sys
 
 if TYPE_CHECKING:
-    from securicad.enterprise.client import Client
-    from securicad.enterprise.models import ModelInfo
-    from securicad.enterprise.projects import Project
-
+    from securicad.enterprise.client import Client # type: ignore pylint: disable=import-error
+    from securicad.enterprise.models import ModelInfo # type: ignore pylint: disable=import-error
+    from securicad.enterprise.projects import Project # type: ignore pylint: disable=import-error
 log = logging.getLogger(__name__)
 
 
@@ -74,15 +62,15 @@ def get_certs() -> Tuple[Optional[str], Optional[str], Optional[str]]:
 
 
 def get_configpath() -> str:
-    print(str(Path(__file__).resolve().parent.joinpath("", "conf.ini")))
-    return str(Path(__file__).resolve().parent.joinpath("", "conf.ini"))
+    return str(Path(__file__).resolve().parent.parent.joinpath("lib", "conf.ini"))
+
 
 def setup(project: Optional[str]):
-    """ Returns a tuple of an enterprise client along with a project object. \n
+    """Returns a tuple of an enterprise client along with a project object. \n
     Keyword arguments: \n
     \t project - The project you wish to upload your model to. Defaults to "Default." \n
     Returns: \n
-        (Client, Project) 
+        (Client, Project)
     """
     creds = get_credentials()
     urls = get_urls()
@@ -94,7 +82,7 @@ def setup(project: Optional[str]):
     cacert = False if certs[0] in ["", None] else certs[0]
     url = urls[1][:-13]
     log(f"Connecting to securiCAD Enterprise")
-    es_client = enterprise.client(
+    es_client = Client(
         base_url=url,
         username=username,
         password=password,
@@ -123,90 +111,71 @@ def setup(project: Optional[str]):
     return (es_client, project)
 
 
-def upload_scad(project: "Project", es_client: "Client", scad: Path, tunings: Optional[Dict[str, List["Tuning"]]]) -> None:
-    """Uploads an .scad file to enterprise to a specified project. \n
-    Keyword arguments: \n
-    \tproject - The enterprise project object to upload the file to. \n
-    \tes_client - A Client object, connected to an enterprise instance. \n
-    \tscad - The full path to the .sCAD file to be uploaded
-    Returns - None
-    """
-    try:
-        filename = scad.as_posix().split("/")[-1]
-    except IndexError:
-        filename = datetime.now().strftime("%D-%T") + ".sCAD"
-    with open(file=scad, mode="rb") as file_io:
-        log(f"Uploading model {filename}")
-        res = es_client.models.upload_scad_model(
-            project=project, filename=filename, file_io=file_io
-        )
-        if not res.is_valid:
-            log(
-                f"Uploaded model {res.name} is not valid, reasons: \n {res.validation_issues}"
-            )
-        model = res.get_model()
-        __apply_tunings(tunings = tunings, es_client=es_client, project=project, model=model, model_info=res)
-
-
-def upload_json(project: "Project", es_client: "Client", environment: Path, app_insights: Optional[Path], tunings: Optional[Dict[str, List["Tuning"]]]) -> None:
-    """ Uploads the active_directory.json and application_insights.json file provided by the collector to enterprise
+def upload_json(
+    project: "Project",
+    es_client: "Client",
+    environment: Path,
+    app_insights: Optional[Path],
+    tunings: Optional[Dict[str, List["Tuning"]]],
+    lang: "Lang"
+) -> None:
+    """Uploads the active_directory.json and application_insights.json file provided by the collector to enterprise
     and parses a model to the specified project. \n
     Keyword arguments: \n
     \tproject - The enterprise project object to upload the file to. \n
     \tes_client - A Client object, connected to an enterprise instance. \n
     \tenvironment - The full path to the active_directory.json file to be uploaded. \n
-    \app_insights - (Optional) The full path to the application_insights.json file to be uploaded. \n
+    \tapp_insights - (Optional) The full path to the application_insights.json file to be uploaded. \n
+    \ttunings - (Optional) Scenarios to run on the model. \n
+    \tlang - The lang file that was used to generate the model
     Returns - None
-    \t 
+    \t
     """
-    def get_file_io(dict_file: Dict[str, Any]) -> io.BytesIO:
-        file_str = json.dumps(dict_file, allow_nan=False, indent=2)
-        file_bytes = file_str.encode("utf-8")
-        return io.BytesIO(file_bytes)
-    
-    def get_file(
-            sub_parser: str, name: str, dict_file: Dict[str, Any]
-        ) -> Dict[str, Any]:
-            return {
-                "sub_parser": sub_parser,
-                "name": name,
-                "file": get_file_io(dict_file),
-            }
-
-    active_directory_data: Dict = {}
-    application_insights_data: Dict = {}
+    ad_filename = environment.as_posix().split("/")[-1]
+    insights_filename = app_insights.as_posix().split("/")[-1] if app_insights else ""
+    active_directory_data: List[Dict[str, Any]] = []
+    application_insights_data: List[Dict[str, Any]] = []
     try:
         f = open(file=environment, mode="rb")
-        active_directory_data = json.load(f)
+        active_directory_data.append(json.load(f))
         f.close()
     except FileNotFoundError as e:
         log(f"{e}")
         log(f"Cannot parse without a valid active_directory.json. Exiting")
-        return None
+        sys.exit()
     if app_insights:
         try:
             f = open(file=app_insights, mode="rb")
-            application_insights_data = json.load(f)
+            application_insights_data.append(json.load(f))
             f.close()
         except FileNotFoundError as e:
             log(f"{e}")
     # Make the data enterprise compatible
-    files = []
-    ad_filename = environment.as_posix().split("/")[-1]
-    insights_filename = app_insights.as_posix().split("/")[-1] if app_insights else ""
-    files.append(get_file(sub_parser="azure-active-directory-parser", name=ad_filename, dict_file=active_directory_data ))
-    if app_insights:
-        files.append(get_file(sub_parser="azure-application-insights-parser", name=insights_filename, dict_file=application_insights_data))
-        log(f"Generating model from environment file {ad_filename} and application insights file {insights_filename}")
+    if application_insights_data:
+        log(
+            f"Generating model from environment file {ad_filename} and application insights file {insights_filename}"
+        )
     else:
         log(f"Generating model from {ad_filename}")
-    res: "ModelInfo" = es_client.models.generate_model(project=project,parser="azure-parser", name=ad_filename, files=files) 
+    res = es_client.parsers.generate_azure_model(
+        project=project,
+        name=ad_filename,
+        az_active_directory_files = active_directory_data,
+        application_insight_files = application_insights_data
+    )
     if not res.is_valid:
         log(
             f"Uploaded model {res.name} is not valid, reasons: \n {res.validation_issues}"
         )
-    model = res.get_model()
-    __apply_tunings(tunings = tunings, es_client=es_client, project=project, model=model, model_info=res)
+    model = res.get_dict()
+    __apply_tunings(
+        tunings=tunings,
+        es_client=es_client,
+        project=project,
+        model=model,
+        model_info=res,
+    )
+    log(f"Done")
 
 
 def __apply_tunings(tunings, es_client, project, model, model_info):
@@ -215,30 +184,57 @@ def __apply_tunings(tunings, es_client, project, model, model_info):
         tuning_objects = []
         for tuning in tuningslist:
             try:
-                tuning_objects.append(
-                    es_client.tunings.create_tuning(
-                        project=project, model=model, **tuning
-                    )
+                tuning_obj = es_client.tunings.create_tuning(
+                    project=project, **tuning
                 )
-            except (TypeError, ValueError):
-                log(f"{tuning} is not a valid tuning")
-        # res.save(model)
+                tuning_objects.append(tuning_obj)
+            except (TypeError, ValueError) as e:
+                log(f"{tuning} is not a valid tuning. {e}")
         # Apply any tunings
         scenario_name = f"{name} {datetime.now().strftime('%Y-%m-%D')}"
+        simulation_name = datetime.now().strftime("T%H:%M:%S")
+        log(f"Starting simulation in {scenario_name}")
         try:
             scenario = es_client.scenarios.get_scenario_by_name(
                 project=project, name=scenario_name
             )
-        except ValueError:
-            scenario = es_client.scenarios.create_scenario(
-                project=project, model_info=model_info, name=scenario_name
+            create_simulation(
+                es_client=es_client, scenario=scenario, name=simulation_name, model=model, tunings=tuning_objects
             )
-        simulation_name = datetime.now().strftime("T%H:%M:%S")
-        log(f"Starting simulation in {scenario_name}")
-        es_client.simulations.create_simulation(
-            scenario=scenario, name=simulation_name, model=model, tunings=tuning_objects
-        )
-        log(f"Done")
+        except ValueError:
+            scenario = create_scenario(
+                es_client=es_client, name=scenario_name, project=project, model_info=model_info, tunings=tuning_objects
+            )
+
+
+
+def create_simulation(es_client: "Client", scenario: "Scenario", name: "Project", model: "Model", tunings: List["Tuning"]):
+    data = {
+        "pid": scenario.pid,
+        "tid": scenario.tid,
+    }
+    if name:
+        data["name"] = name
+    if model:
+        data["blob"] = model
+    if tunings:
+        data["cids"] = [t.tuning_id for t in tunings]
+    res = es_client._put(
+        "simulation",
+        data
+    )
+
+
+def create_scenario(es_client: "Client", name: str, project: "Project", model_info: "ModelInfo", tunings: List["Tuning"]):
+    data: Dict[str, Any] = {
+        "pid": project.pid,
+        "mid": model_info.mid,
+        "name": name,
+        "description": ""
+    }
+    if tunings:
+        data["cids"] = [t.tuning_id for t in tunings]
+    es_client._put("scenario", data)
 
 
 def log(message: str):
@@ -248,17 +244,6 @@ def log(message: str):
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-s",
-        "--scad",
-        action="store",
-        default=None,
-        type=Path,
-        required=False,
-        help="securicad .scad model file path",
-        metavar="FILE",
-        dest="scad_file",
-    )
     parser.add_argument(
         "-e",
         "--environment",
@@ -322,20 +307,19 @@ def main() -> None:
             log(e)
     else:
         tunings = {}
-    if args.scad_file:
-        try:
-            scad = Path(args.scad_file)
-            if scad.suffix != ".sCAD":
-                log(f"Invalid file type {args.scad_file}. input file needs to be a .sCAD file")
-                return
-            upload_scad(project = project, es_client=es_client, scad=args.scad_file, tunings=tunings)
-        except:
-            log(f"Invalid input {args.scad_file} . input file needs to be a path")
-            return
-    elif args.ad_file:
-        upload_json(project=project, es_client=es_client, environment=args.ad_file, app_insights=args.ai_file, tunings=tunings)
+    if args.ad_file:
+        upload_json(
+            project=project,
+            es_client=es_client,
+            environment=args.ad_file,
+            app_insights=args.ai_file,
+            tunings=tunings
+        )
     else:
-        log("Need to provide either a .sCAD file or an active_directory.json (together with optional application_insights.json file). Run the program with -h for more info")
+        log(
+            "Need to provide either an active_directory.json (together with optional application_insights.json file). Run the program with -h for more info"
+        )
+
 
 if __name__ == "__main__":
     main()
