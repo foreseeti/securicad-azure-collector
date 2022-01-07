@@ -20,6 +20,6 @@ jobs:
           export AZURE_SUBSCRIPTION_ID=${{ secrets.AZURE_SUBSCRIPTION_ID }}
           export AZURE_CLIENT_SECRET=${{ secrets.AZURE_CLIENT_SECRET }}
           export AZURE_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}
-          tools/scripts/create_requirements.txt
+          ./tools/scripts/create_requirements.sh
           pip3 install -r requirements.txt
           python3 -m securicad.azure_collector --verbose
