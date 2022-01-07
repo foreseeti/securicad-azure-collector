@@ -22,4 +22,4 @@ jobs:
           export AZURE_CLIENT_ID=${{ secrets.AZURE_CLIENT_ID }}
           tools/scripts/create_requirements.txt
           pip3 install -r requirements.txt
-          python3 -m securicad.azure_collector -D
+          python3 -m securicad.azure_collector --verbose
