@@ -32,7 +32,6 @@ from azure.identity import DefaultAzureCredential
 from typing import Dict, List, Optional, Tuple
 from json.decoder import JSONDecodeError
 from pathlib import Path
-from tqdm import tqdm
 # Defined object classes following the json schema
 from securicad.azure_collector.schema_classes import (
     Subscription,
@@ -685,7 +684,6 @@ def write_ad_as_json(ad_output: Optional[Path] = None, insights_output: Optional
     rbac_roles = []
     groups: List[Dict[str, "Group"]] = [] # Will map any principal Group to all its members
     log.info("Collecting role assignments")
-    #with tqdm(ad_subscriptions["subsRaw"]) as progress:
     for sub in ad_subscriptions["subsRaw"]:
         name = sub.get("display_name")
         subscriptionId = sub.get("subscription_id")
