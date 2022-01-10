@@ -1,4 +1,4 @@
-# Copyright 2019-2022 Foreseeti AB <https://foreseeti.com>
+# Copyright 2021-2022 Foreseeti AB <https://foreseeti.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,7 +25,5 @@ verify_python_version()
 from .main import OUTPUT_VERSION as OUTPUT_VERSION # A version number for the parser to check if it's too old
 from .main import PARSER_VERSION_FIELD as PARSER_VERSION_FIELD
 from .main import write_ad_as_json as collect
-
-test, test2 = collect()
 
 __version__ = "1.0.0"
