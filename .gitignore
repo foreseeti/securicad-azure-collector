@@ -134,3 +134,5 @@ ads
 # env var
 envvariables.sh
 conf.ini
+active_directory*.json
+application_insights*.json
