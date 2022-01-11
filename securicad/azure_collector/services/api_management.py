@@ -108,9 +108,6 @@ def parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_o
         principalId = None
         principalType = None
         user_assigned_ids = []
-
-    
-    raw_properties = rg_results_as_dict["data"][0]["properties"]
     try:
         subnetId = raw_properties["virtualNetworkConfiguration"][
             "subnetResourceId"
@@ -121,32 +118,12 @@ def parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_o
         )
         subnetId = None
     try:
-        virtualNetworkType = raw_properties["virtualNetworkType"]
-    except KeyError:
-        log.debug(f"Couldn't find virtual network type of the api management resource {name}")
-        virtualNetworkType = None
-    try:
-        publicipAddresses = raw_properties["publicIPAddresses"]
-    except KeyError:
-        log.debug(
-            f"Couldn't find public ip of the api managment resource {name}."
-        )
-        publicipAddresses = None
-    try:
-        privateipAddresses = raw_properties["privateIPAddresses"]
-    except KeyError:
-        log.debug(
-            f"Couldn't find private ip of the api managment resource {name}."
-        )
-        privateipAddresses = None
-    try:
         certificates = raw_properties["certificates"]
     except KeyError:
         """log.debug(
             f"Couldn't find the certificates of the api managment resource {name}."
         )""" # Not using this attribute from what I can see regardless atm, no point warning
         certificates = []
-
     # To get api representing data from the resource explorer
     endpoint = f"https://management.azure.com/subscriptions/{sub_id}/resourceGroups/{resource_group}/providers/Microsoft.ApiManagement/service/{name}/apis?api-version=2018-01-01"
     try:
@@ -310,8 +287,8 @@ def parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_o
         principalId=principalId,
         principalType=principalType,
         userAssignedIdentities=user_assigned_ids,
-        publicipAddresses=publicipAddresses,
-        privateipAddresses=privateipAddresses,
+        publicIpAddresses=publicipAddresses,
+        privateIpAddresses=privateipAddresses,
         apiManagementUsers=apiManagementUsers,
         apiManagementSubscriptions=apiManagementSubscriptions,
     )
