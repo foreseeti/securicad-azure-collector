@@ -1017,7 +1017,7 @@ def main(
     \tAZURE_CLIENT_SECRET - your client secret
         
     Optional environment variables:\n
-    AZURE_SUBSCRIPTION_ID - Set the AZURE_SUBSCRIPTION_ID if you want to examine a single specific subscription.\n
+    \tAZURE_SUBSCRIPTION_ID - Set the AZURE_SUBSCRIPTION_ID if you want to examine a single specific subscription.\n
     \tAZURE_RESOURCE_GROUP_NAMES - '["rsg_one", "rsg_two"]' List the names of resource groups you only want to include. Fetches all resource groups by default\n
     \tAPP_INSIGHTS_INTERVAL = Time interval following the ISO8601 standard: YYYY-MM-DDTHH-MM-SS/YYYY-MM-DDTHH-MM-SS (e.g. 2020-01-01T16:01:30.000/2021-02-20T16:01:30.000). Defaults to the latest 90 days\n
     """
