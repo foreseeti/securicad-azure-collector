@@ -531,6 +531,8 @@ class AppService:
         serverFarmId,
         authenticationEnabled,
         ipSecurityRestrictions,
+        disabledFTPs,
+        preventAnonymousAccess
     ):
         self.id = resourceId
         self.name = name
@@ -547,6 +549,8 @@ class AppService:
         self.serverFarmId = serverFarmId
         self.authenticationEnabled = authenticationEnabled
         self.ipSecurityRestrictions = ipSecurityRestrictions
+        self.disabledFTPs = disabledFTPs
+        self.preventAnonymousAccess = preventAnonymousAccess
 
 
 class AppServicePlan:

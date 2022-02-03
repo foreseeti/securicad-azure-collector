@@ -74,7 +74,7 @@ DEBUGGING = False
 # COUNTING and ASSETS are used to count known/unknown asset types. See -ca or -help flags.
 COUNTING = False
 ASSETS = None
-OUTPUT_VERSION = 1
+OUTPUT_VERSION = 2
 PARSER_VERSION_FIELD = "parser_version"
 
 log = logging.getLogger("securicad-azure-collector")

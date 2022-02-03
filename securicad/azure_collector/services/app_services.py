@@ -111,6 +111,12 @@ def parse_obj(resource, resource_type, resource_group, sub_id, name, rg_client, 
             site_properties = None
         ip_security_restrictions = []
         if site_properties:
+            # For disabledFTPs defense
+            try:
+                disabled_ftps = site_properties["ftpsState"] # potential values Disabled / AllAllowed / FtpsOnly
+            except KeyError:
+                disabled_ftps = "AllAllowed"
+                log.debug(f"Couldn't access ftpsState property for {name}, assuming allowed deployment mechanism")
             try:
                 raw_ip_restrictions = site_properties[
                     "ipSecurityRestrictions"
@@ -146,31 +152,20 @@ def parse_obj(resource, resource_type, resource_group, sub_id, name, rg_client, 
                 )
                 pass
             # Get Authentication values
-            endpoint = f"https://management.azure.com/subscriptions/{sub_id}/resourceGroups/{resource_group}/providers/Microsoft.Web/sites/{name}/config/authsettings/list?api-version=2020-10-01"
-            authentication_enabled = False
-            auth_properties = None
             try:
-                auth_resource_explorer_data = requests.post(
-                    url=endpoint, headers=headers
-                ).json()
+                authentication_enabled = site_properties["siteAuthEnabled"]
                 try:
-                    auth_properties = auth_resource_explorer_data["properties"]
-                except:
-                    log.debug(
-                        f"Error getting auth settings properties field on object returned from the returned object of {endpoint}]."
-                    )
-                try:
-                    authentication_enabled = auth_properties["enabled"]
-                    if authentication_enabled == None:
-                        log.debug(
-                            f"Not allowed to list siteAuthSettings of {name}, defaulting siteAuthentication enabled value to False. If truly needed give the app Microsoft.Web/sites/config/list/action API permission to fix this issue or recommended set this defense value to true in your input or scenario."
-                        )
-                        authentication_enabled = False
+                    prevent_anonymous_access = False if site_properties["siteAuthSettingsV2"]["globalValidation"]["unauthenticatedClientAction"] == "AllowAnonymous" else True #RedirectToLoginPage is the other option
                 except KeyError:
-                    log.info("Assuming app service / function app {name} isn't using azure authentication, meaning authProperties.enabled is False")
-            except:
-                # debug because this is not a default expected permission
-                log.debug(f"Not allowed API request POST {endpoint}. If truly needed, give the app Microsoft.Web/sites/config/list/action API permission to fix this issue. However, it's recommended to set the 'enableAppServiceAuthenticate' defence value to True in your tunings for your model scenario instead.")
+                    log.debug(f"Couldn't get unauthenticatedClientAction value of {name}, assuming allowed anonymousaccess")
+                    prevent_anonymous_access = False
+            except KeyError:
+                authentication_enabled = False
+                log.info(f"Assuming app service / function app {name} isn't using any of the available identity providers for OAuth authentication, meaning siteAuthEnabled is False")
+                if authentication_enabled and not https_only:
+                    log.info(f"As a trusted identity provider is enabled, communication via HTTPS is enforced. Settings https_only value to True")
+                    https_only = True
+                prevent_anonymous_access = False
     except:
         pass
 
@@ -190,5 +185,7 @@ def parse_obj(resource, resource_type, resource_group, sub_id, name, rg_client, 
         serverFarmId=app_service_plan,
         authenticationEnabled=authentication_enabled,
         ipSecurityRestrictions=ip_security_restrictions,
+        disabledFTPs=disabled_ftps,
+        preventAnonymousAccess=prevent_anonymous_access
     )
     return object_to_add
