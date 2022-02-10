@@ -437,18 +437,17 @@ def iterate_resources_to_json(
                     DEBUGGING=DEBUGGING,
                 )
                 if app_insights_dump != None:
-                    try:
-                        json_representation["applicationInsights"].append(
-                            app_insights_dump
-                        )
-                    except KeyError:
-                        json_representation.setdefault(
-                            "applicationInsights", [app_insights_dump]
-                        )
-                    except AttributeError:
-                        json_representation.setdefault(
-                            "applicationInsights", [app_insights_dump]
-                        )
+                    if "error" in [k.lower() for k in app_insights_dump.keys()]:
+                        log.warning(f"Error getting application insights resource {name}. {app_insights_dump.get('error', {}).get('message', '')}")
+                    else:
+                        try:
+                            json_representation["applicationInsights"].append(
+                                app_insights_dump
+                            )
+                        except (KeyError, AttributeError):
+                            json_representation.setdefault(
+                                "applicationInsights", [app_insights_dump]
+                            )
 
             elif resource_type == "microsoft.sql/servers":
                 object_to_add = sql_servers.parse_obj(
