@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+from typing import List
 
 class Subscription:
     def __init__(self, resourceId, name, subscriptionId, authorizationSource):
@@ -531,6 +531,8 @@ class AppService:
         serverFarmId,
         authenticationEnabled,
         ipSecurityRestrictions,
+        disabledFTPs,
+        preventAnonymousAccess
     ):
         self.id = resourceId
         self.name = name
@@ -547,6 +549,8 @@ class AppService:
         self.serverFarmId = serverFarmId
         self.authenticationEnabled = authenticationEnabled
         self.ipSecurityRestrictions = ipSecurityRestrictions
+        self.disabledFTPs = disabledFTPs
+        self.preventAnonymousAccess = preventAnonymousAccess
 
 
 class AppServicePlan:
@@ -787,8 +791,10 @@ class HVA_Tag:
         confValue: int,
         integrityValue: int,
         availValue: int,
+        scadGrps: List[str] = [], 
     ) -> None:
         self.id: str = resourceId
         self.confValue: int = confValue
         self.integrityValue: int = integrityValue
         self.availValue: int = availValue
+        self.scadGrps: List[str] = scadGrps

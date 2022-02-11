@@ -14,20 +14,31 @@
 
 from securicad.azure_collector.schema_classes import HVA_Tag
 from securicad.azure_collector.services.parser_logger import log
+from typing import Optional
 
 
 def handle_hva_tag(hva_tag: str, resource_id: str, debugging: bool) -> HVA_Tag:
     components = hva_tag.split(",")
     c_val, i_val, a_val = 0, 0, 0
+    groups=set()
     for component in components:
         try:
             string = component.split(":")
-            category = string[0]
+            category = string[0].lower()
+            if category == "group":
+                value = str(string[1]).lower()
+                if any (x in value for x in ["[","]"]):
+                    values = value.replace("[","").replace("]","").split(",")
+                    for group in values:
+                        groups.add(group)
+                else:
+                    groups.add(value)
+                continue
             try:
                 number = int(string[1])
             except ValueError:
                 log.error(
-                    f"HVA value '{string[1]}' for resource '{resource_id}' should be numeric but isn't. Skipping assignment."
+                    f"HVA value '{string[1]}' for key '{category}' on resource '{resource_id}' should be numeric but isn't. Skipping assignment."
                 )
                 continue
             if number > 10:
@@ -40,15 +51,15 @@ def handle_hva_tag(hva_tag: str, resource_id: str, debugging: bool) -> HVA_Tag:
                     f"HVA consequence cannot be below 0, but resource '{resource_id}' is assigned {number}. Defaulting consequence to 0."
                 )
                 number = 0
-            if category.lower() == "c":
+            if category == "c":
                 c_val = number
-            elif category.lower() == "i":
+            elif category == "i":
                 i_val = number
-            elif category.lower() == "a":
+            elif category == "a":
                 a_val = number
             else:
                 log.warning(
-                    f"Incorrectly formatted HVA tag: {hva_tag}. Valid prefixes are only c, i or a (case-insensitive)"
+                    f"Incorrectly formatted HVA tag: {hva_tag}. Valid keys are c, i, a and group (case-insensitive)"
                 )
         except IndexError as e:
             log.debug(
@@ -59,4 +70,5 @@ def handle_hva_tag(hva_tag: str, resource_id: str, debugging: bool) -> HVA_Tag:
         confValue=c_val,
         integrityValue=i_val,
         availValue=a_val,
+        scadGrps=list(groups)
     )
