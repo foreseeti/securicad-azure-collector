@@ -27,11 +27,13 @@ from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.subscription import SubscriptionClient
 from azure.common import exceptions as azexceptions
 from azure.mgmt.authorization import AuthorizationManagementClient
+
 # To authenticate the service principal connecting to the subscriptions/resources
 from azure.identity import DefaultAzureCredential
 from typing import Dict, List, Optional, Tuple
 from json.decoder import JSONDecodeError
 from pathlib import Path
+
 # Defined object classes following the json schema
 from securicad.azure_collector.schema_classes import (
     Subscription,
@@ -66,6 +68,7 @@ from securicad.azure_collector.services import (
     container_registries,
     kubernetes_clusters,
     api_management,
+    logic_apps,
     hva_tagging,
 )
 
@@ -78,7 +81,10 @@ OUTPUT_VERSION = 2
 PARSER_VERSION_FIELD = "parser_version"
 
 log = logging.getLogger("securicad-azure-collector")
-app = typer.Typer(help="Collects an Azure Tenant environment made for securiCAD by foreseeti")
+app = typer.Typer(
+    help="Collects an Azure Tenant environment made for securiCAD by foreseeti"
+)
+
 
 def init_logging(quiet: bool, verbose: bool) -> None:
     if verbose:
@@ -97,6 +103,7 @@ def init_logging(quiet: bool, verbose: bool) -> None:
     formatter.converter = time.gmtime  # type: ignore
     handler.setFormatter(formatter)
     log.addHandler(handler)
+
 
 def fetch_subscriptions(sub_client):
     """Fetches AD subscriptions. If the AZURE_SUBSCRIPTION_ID environment variable is set,
@@ -176,7 +183,7 @@ def iterate_resources_to_json(
         )
     for resource in resources:
         resource_type = resource.type.lower()
-        tags = resource.tags if hasattr(resource, 'tags') else dict()
+        tags = resource.tags if hasattr(resource, "tags") else dict()
         name = resource.name
         resource_id = resource.id
         # Find resource type, handle accordingly
@@ -438,7 +445,9 @@ def iterate_resources_to_json(
                 )
                 if app_insights_dump != None:
                     if "error" in [k.lower() for k in app_insights_dump.keys()]:
-                        log.warning(f"Error getting application insights resource {name}. {app_insights_dump.get('error', {}).get('message', '')}")
+                        log.warning(
+                            f"Error getting application insights resource {name}. {app_insights_dump.get('error', {}).get('message', '')}"
+                        )
                     else:
                         try:
                             json_representation["applicationInsights"].append(
@@ -543,7 +552,14 @@ def iterate_resources_to_json(
                     headers,
                 )
                 json_key = "apiManagements"
-            
+            elif resource_type == "microsoft.logic/workflows":
+                object_to_add = logic_apps.parse_logic_app(
+                    resource, resource_group, credentials, sub_id
+                )
+            elif resource_type == "microsoft.logic/integrationaccounts":
+                object_to_add = logic_apps.parse_integration_acc()
+            elif resource_type == "microsoft.web/connections":
+                object_to_add = logic_apps.parse_api_connection()
             else:
                 if COUNTING:
                     supported_asset = False
@@ -575,7 +591,9 @@ def iterate_resources_to_json(
     return json_representation
 
 
-def write_ad_as_json(ad_output: Optional[Path] = None, insights_output: Optional[Path] = None) -> Tuple[dict, Optional[List[dict]]]:
+def write_ad_as_json(
+    ad_output: Optional[Path] = None, insights_output: Optional[Path] = None
+) -> Tuple[dict, Optional[List[dict]]]:
     """Generates the json file of the Active Directory to use as input for the parser \n
     Keyword arguments:
     \t ad_output - Path to where to save the active directory data
@@ -583,18 +601,26 @@ def write_ad_as_json(ad_output: Optional[Path] = None, insights_output: Optional
     \nReturns:
     \t Tuple(active directory dict data, application insights list data | None)
     """
-    def verify_paths(ad_output: Optional[Path], insights_output: Optional[Path]) -> None:
-        """ Ensures the output paths are of json format
-        """
+
+    def verify_paths(
+        ad_output: Optional[Path], insights_output: Optional[Path]
+    ) -> None:
+        """Ensures the output paths are of json format"""
         if not ad_output:
-            ad_output = Path(f"active_directory_{datetime.datetime.today().strftime('%Y-%m-%d_%H-%M')}.json")
+            ad_output = Path(
+                f"active_directory_{datetime.datetime.today().strftime('%Y-%m-%d_%H-%M')}.json"
+            )
         if not insights_output:
-            insights_output = Path(f"application_insights_{datetime.datetime.today().strftime('%Y-%m-%d_%H-%M')}.json")
+            insights_output = Path(
+                f"application_insights_{datetime.datetime.today().strftime('%Y-%m-%d_%H-%M')}.json"
+            )
         ad_output.with_suffix(".json")
         insights_output.with_suffix(".json")
         return (ad_output, insights_output)
-        
-    ad_output, insights_output = verify_paths(ad_output = ad_output, insights_output = insights_output)
+
+    ad_output, insights_output = verify_paths(
+        ad_output=ad_output, insights_output=insights_output
+    )
     # Authenticate the Service Principal
     credentials = authenticate()
     # Need to make regular REST API call for role definition information
@@ -603,7 +629,7 @@ def write_ad_as_json(ad_output: Optional[Path] = None, insights_output: Optional
         access_token = credentials.get_token(scope)
         bearer_token = access_token[0]
     except ClientAuthenticationError as e:
-        log.error (
+        log.error(
             f"Invalid authentication, Cannot get a bearer token for type: {type(credentials)} on scope {scope}. Cannot fetch azure data, exiting."
         )
         raise ClientAuthenticationError(e)
@@ -614,7 +640,7 @@ def write_ad_as_json(ad_output: Optional[Path] = None, insights_output: Optional
 
     final_json_object = {
         "name": "Scanned_Azure_Active_Directory",
-        PARSER_VERSION_FIELD: OUTPUT_VERSION
+        PARSER_VERSION_FIELD: OUTPUT_VERSION,
     }
 
     resource_groups_of_interest = None
@@ -629,7 +655,9 @@ def write_ad_as_json(ad_output: Optional[Path] = None, insights_output: Optional
                 resource_groups_of_interest = json.loads(resource_groups_of_interest)
             except JSONDecodeError:
                 if DEBUGGING:
-                    log.warning(f"AZURE_RESOURCE_GROUP_NAMES seems to be the wrong format.")
+                    log.warning(
+                        f"AZURE_RESOURCE_GROUP_NAMES seems to be the wrong format."
+                    )
         elif (
             type(resource_groups_of_interest) == str
             and "," in resource_groups_of_interest
@@ -681,7 +709,9 @@ def write_ad_as_json(ad_output: Optional[Path] = None, insights_output: Optional
     # Subscription objects generation
     subscriptions = []
     rbac_roles = []
-    groups: List[Dict[str, "Group"]] = [] # Will map any principal Group to all its members
+    groups: List[
+        Dict[str, "Group"]
+    ] = []  # Will map any principal Group to all its members
     log.info("Collecting role assignments")
     for sub in ad_subscriptions["subsRaw"]:
         name = sub.get("display_name")
@@ -704,7 +734,9 @@ def write_ad_as_json(ad_output: Optional[Path] = None, insights_output: Optional
             credentials, subscriptionId, api_version="2018-01-01-preview"
         )  # Need two seperate once because one version doesn't support principal_type while the other doesn't contain role_definitions
         role_assignments = amc.role_assignments.list()
-        checked_groups: set = set() #Keeps track of which groups we have checked members for, to not be stuck forever
+        checked_groups: set = (
+            set()
+        )  # Keeps track of which groups we have checked members for, to not be stuck forever
         for role_assignment in role_assignments:
             role_assignment_dict = role_assignment.__dict__
             if any(
@@ -750,9 +782,7 @@ def write_ad_as_json(ad_output: Optional[Path] = None, insights_output: Optional
                     graph_res = requests.post(
                         url=f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token",
                         data=auth_data,
-                        headers={
-                            "Content-Type": "application/x-www-form-urlencoded"
-                        },
+                        headers={"Content-Type": "application/x-www-form-urlencoded"},
                     )
                     access_token = graph_res.json().get("access_token")
                     try:
@@ -770,21 +800,21 @@ def write_ad_as_json(ad_output: Optional[Path] = None, insights_output: Optional
                         if (
                             group_id not in checked_groups
                         ):  # Group membership can be cyclic, we don't want to go on forever
-                                checked_groups.add(group_id)
-                                members = ad_groups.collect_group_memberships(
-                                    group_id, tenant_id, graph_headers, DEBUGGING
-                                )
-                                group_members = []
-                                for member in members:
-                                    group_members.append(member)
-                                    if (
-                                        member["memberType"] == "group"
-                                        and member["id"] not in checked_groups
-                                    ):
-                                        nested_groups.append(member["id"])
-                                groups.append(
-                                    {"groupId": group_id, "members": group_members}
-                                )
+                            checked_groups.add(group_id)
+                            members = ad_groups.collect_group_memberships(
+                                group_id, tenant_id, graph_headers, DEBUGGING
+                            )
+                            group_members = []
+                            for member in members:
+                                group_members.append(member)
+                                if (
+                                    member["memberType"] == "group"
+                                    and member["id"] not in checked_groups
+                                ):
+                                    nested_groups.append(member["id"])
+                            groups.append(
+                                {"groupId": group_id, "members": group_members}
+                            )
                 rbac_roles.append(role_to_add)
     final_json_object["groups"] = groups
     final_json_object["subscriptions"] = subscriptions
@@ -868,6 +898,7 @@ def write_ad_as_json(ad_output: Optional[Path] = None, insights_output: Optional
         json.dump(obj=final_json_object, fp=json_file, indent=4, sort_keys=True)
     return (final_json_object, app_insights)
 
+
 def __extract_management_groups(management_group_id, management_group_name, headers):
     """Helper function to extract the ManagementGroup objects from azure"""
     endpoint = f"https://management.azure.com/{management_group_id}?api-version=2020-02-01&$expand=children&$recurse=True"
@@ -925,6 +956,7 @@ def authenticate():
     Returns: \n
         Authentication object if successfully authenticated identity. Exits otherwise
     """
+
     class MissingCredentials(Exception):
         pass
 
@@ -942,7 +974,9 @@ def authenticate():
             )
             raise ClientAuthenticationError(e)
     except (ValueError, ClientAuthenticationError):
-        raise MissingCredentials("Required environment variables are not set and cannot authenticate as a Manage Identity. Start the module with -h for help, exiting.")
+        raise MissingCredentials(
+            "Required environment variables are not set and cannot authenticate as a Manage Identity. Start the module with -h for help, exiting."
+        )
     return credentials
 
 
@@ -967,7 +1001,9 @@ def asset_count_to_json():
 @app.command()
 def main(
     ad_output: Path = typer.Option(
-        Path(f"active_directory_{datetime.datetime.today().strftime('%Y-%m-%d_%H-%M')}.json"),
+        Path(
+            f"active_directory_{datetime.datetime.today().strftime('%Y-%m-%d_%H-%M')}.json"
+        ),
         "--output",
         "-o",
         help="Azure Active Directory output JSON file",
@@ -978,7 +1014,9 @@ def main(
         allow_dash=True,
     ),
     insights_output: Path = typer.Option(
-        Path(f"application_insights_{datetime.datetime.today().strftime('%Y-%m-%d_%H-%M')}.json"),
+        Path(
+            f"application_insights_{datetime.datetime.today().strftime('%Y-%m-%d_%H-%M')}.json"
+        ),
         "--insights-output",
         "-io",
         help="Application Insights output JSON file",
@@ -999,33 +1037,37 @@ def main(
         False, "--verbose", "-v", show_default=False, help="Print debug information"
     ),
     count_assets: bool = typer.Option(
-        False, "--count-assets", "-ca", show_default=False, help="Print the number of assets in the environment"
-    )
-    ):
+        False,
+        "--count-assets",
+        "-ca",
+        show_default=False,
+        help="Print the number of assets in the environment",
+    ),
+):
     """
     Collects an Azure environment and stores the results in a JSON file. \n
 
-    The DefaultAzureCredentials class is used to to authenticate against Azure. 
+    The DefaultAzureCredentials class is used to to authenticate against Azure.
     We suggest you use a Managed Identity via an Azure VM for this collector,
     alternatively set up an App Registration as a Service Principal.\n
-    
+
     If going the Service Principal route then environment variables need to be set according to below.\n
     Required environment variables:\n
     \tAZURE_TENANT_ID - Your AD tenant ID.\n
     \tAZURE_CLIENT_ID - Your registered application's client ID.\n
     \tAZURE_CLIENT_SECRET - your client secret
-        
+
     Optional environment variables:\n
     \tAZURE_SUBSCRIPTION_ID - Set the AZURE_SUBSCRIPTION_ID if you want to examine a single specific subscription.\n
     \tAZURE_RESOURCE_GROUP_NAMES - '["rsg_one", "rsg_two"]' List the names of resource groups you only want to include. Fetches all resource groups by default\n
     \tAPP_INSIGHTS_INTERVAL = Time interval following the ISO8601 standard: YYYY-MM-DDTHH-MM-SS/YYYY-MM-DDTHH-MM-SS (e.g. 2020-01-01T16:01:30.000/2021-02-20T16:01:30.000). Defaults to the latest 90 days\n
     """
-    init_logging(quiet = quiet, verbose = verbose)
+    init_logging(quiet=quiet, verbose=verbose)
     global COUNTING
     global ASSETS
     if count_assets:
         COUNTING = True
         ASSETS = {}
-    write_ad_as_json(ad_output = ad_output, insights_output = insights_output)
+    write_ad_as_json(ad_output=ad_output, insights_output=insights_output)
     if COUNTING:
         asset_count_to_json()

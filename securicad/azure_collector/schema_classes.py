@@ -13,6 +13,7 @@
 # limitations under the License.
 from typing import List
 
+
 class Subscription:
     def __init__(self, resourceId, name, subscriptionId, authorizationSource):
         """Required: \n
@@ -532,7 +533,7 @@ class AppService:
         authenticationEnabled,
         ipSecurityRestrictions,
         disabledFTPs,
-        preventAnonymousAccess
+        preventAnonymousAccess,
     ):
         self.id = resourceId
         self.name = name
@@ -791,10 +792,48 @@ class HVA_Tag:
         confValue: int,
         integrityValue: int,
         availValue: int,
-        scadGrps: List[str] = [], 
+        scadGrps: List[str] = [],
     ) -> None:
         self.id: str = resourceId
         self.confValue: int = confValue
         self.integrityValue: int = integrityValue
         self.availValue: int = availValue
         self.scadGrps: List[str] = scadGrps
+
+
+class Logic_App:
+    def __init__(
+        self: str,
+        resourceId: str,
+        name: str,
+        resourceGroup: str,
+        principalId: str,
+        integrationAccount: str,
+        apiConnections: List[str],
+    ) -> None:
+        self.id = resourceId
+        self.name = name
+        self.resourceGroup = resourceGroup
+        self.principalId = principalId
+        self.integrationAccount = integrationAccount
+        self.apiConnections = apiConnections
+
+
+class Integration_Account:
+    def __init__(
+        self: str,
+        resourceId: str,
+        name: str,
+    ) -> None:
+        self.id = resourceId
+        self.name = name
+
+
+class API_Connection:
+    def __init__(
+        self: str,
+        resourceId: str,
+        name: str,
+    ) -> None:
+        self.id: str = resourceId
+        self.name = name
