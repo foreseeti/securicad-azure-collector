@@ -552,14 +552,15 @@ def iterate_resources_to_json(
                     headers,
                 )
                 json_key = "apiManagements"
+
             elif resource_type == "microsoft.logic/workflows":
-                object_to_add = logic_apps.parse_logic_app(
-                    resource, resource_group, credentials, sub_id
-                )
+                object_to_add = logic_apps.parse_logic_app(resource)
             elif resource_type == "microsoft.logic/integrationaccounts":
-                object_to_add = logic_apps.parse_integration_acc()
+                object_to_add = logic_apps.parse_integration_acc(resource)
+
             elif resource_type == "microsoft.web/connections":
-                object_to_add = logic_apps.parse_api_connection()
+                object_to_add = logic_apps.parse_api_connection(resource)
+
             else:
                 if COUNTING:
                     supported_asset = False

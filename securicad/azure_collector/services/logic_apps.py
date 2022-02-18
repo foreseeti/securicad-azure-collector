@@ -32,7 +32,7 @@ def parse_logic_app(resource, resource_group, credentials, sub_id) -> Logic_App:
     )  # this doesn't seem to be assigned, find principalId elsewhere?
     logic_app = logic_client.workflows.get(resource_group, resource.name).as_dict()
     try:
-        integration_account = logic_app["integration_account"]["id"]
+        integration_account = logic_app["integration_account"]["id"].lower()
     except (TypeError, KeyError):
         integration_account = None
     connection_ids = []
@@ -41,7 +41,7 @@ def parse_logic_app(resource, resource_group, credentials, sub_id) -> Logic_App:
             connection_ids.append(
                 logic_app["parameters"]["$connections"]["value"][connection][
                     "connectionId"
-                ]
+                ].lower()
             )
         except (TypeError, KeyError):
             continue
@@ -56,9 +56,15 @@ def parse_logic_app(resource, resource_group, credentials, sub_id) -> Logic_App:
     return object_to_add
 
 
-def parse_integration_acc() -> Integration_Account:
-    return None
+def parse_integration_acc(resource) -> Integration_Account:
+    resourceId = resource.id.lower()
+    name = resource.name.lower()
+    object_to_add = Integration_Account(resourceId=resourceId, name=name)
+    return object_to_add
 
 
-def parse_api_connection() -> API_Connection:
-    return None
+def parse_api_connection(resource) -> API_Connection:
+    resourceId = resource.id.lower()
+    name = resource.name.lower()
+    object_to_add = Integration_Account(resourceId=resourceId, name=name)
+    return object_to_add
