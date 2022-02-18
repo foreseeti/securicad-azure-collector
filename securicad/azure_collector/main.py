@@ -554,12 +554,18 @@ def iterate_resources_to_json(
                 json_key = "apiManagements"
 
             elif resource_type == "microsoft.logic/workflows":
-                object_to_add = logic_apps.parse_logic_app(resource)
+                object_to_add = logic_apps.parse_logic_app(
+                    resource, resource_group, credentials, sub_id
+                )
+                json_key = "logicApps"
+
             elif resource_type == "microsoft.logic/integrationaccounts":
                 object_to_add = logic_apps.parse_integration_acc(resource)
+                json_key = "integrationAccounts"
 
             elif resource_type == "microsoft.web/connections":
                 object_to_add = logic_apps.parse_api_connection(resource)
+                json_key = "apiConnections"
 
             else:
                 if COUNTING:
