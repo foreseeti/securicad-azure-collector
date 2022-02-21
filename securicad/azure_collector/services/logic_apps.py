@@ -24,12 +24,16 @@ from securicad.azure_collector.services.parser_logger import log
 
 
 def parse_logic_app(resource, resource_group, credentials, sub_id) -> Logic_App:
-    logic_client = logic.LogicManagementClient(
-        credential=credentials, subscription_id=sub_id
-    )
+    region = resource.location.lower()
+    resourceId = resource.id.lower()
+    name = resource.name.lower()
     principal_id = (
         resource.managed_by if resource.managed_by else ""
     )  # this doesn't seem to be assigned, find principalId elsewhere?
+
+    logic_client = logic.LogicManagementClient(
+        credential=credentials, subscription_id=sub_id
+    )
     logic_app = logic_client.workflows.get(resource_group, resource.name).as_dict()
     try:
         integration_account = logic_app["integration_account"]["id"].lower()
@@ -46,12 +50,13 @@ def parse_logic_app(resource, resource_group, credentials, sub_id) -> Logic_App:
         except (TypeError, KeyError):
             continue
     object_to_add = Logic_App(
-        resourceId=resource.id,
-        name=resource.name,
+        resourceId=resourceId,
+        name=name,
         resourceGroup=resource_group,
         principalId=principal_id,
         integrationAccount=integration_account,
         apiConnections=connection_ids,
+        region=region,
     )
     return object_to_add
 
@@ -59,12 +64,14 @@ def parse_logic_app(resource, resource_group, credentials, sub_id) -> Logic_App:
 def parse_integration_acc(resource) -> Integration_Account:
     resourceId = resource.id.lower()
     name = resource.name.lower()
-    object_to_add = Integration_Account(resourceId=resourceId, name=name)
+    region = resource.location.lower()
+    object_to_add = Integration_Account(resourceId=resourceId, name=name, region=region)
     return object_to_add
 
 
 def parse_api_connection(resource) -> API_Connection:
     resourceId = resource.id.lower()
     name = resource.name.lower()
-    object_to_add = Integration_Account(resourceId=resourceId, name=name)
+    region = resource.location.lower()
+    object_to_add = API_Connection(resourceId=resourceId, name=name, region=region)
     return object_to_add

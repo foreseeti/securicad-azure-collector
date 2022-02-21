@@ -810,6 +810,7 @@ class Logic_App:
         principalId: str,
         integrationAccount: str,
         apiConnections: List[str],
+        region: str,
     ) -> None:
         self.id = resourceId
         self.name = name
@@ -817,6 +818,7 @@ class Logic_App:
         self.principalId = principalId
         self.integrationAccount = integrationAccount
         self.apiConnections = apiConnections
+        self.region = region
 
 
 class Integration_Account:
@@ -824,9 +826,11 @@ class Integration_Account:
         self: str,
         resourceId: str,
         name: str,
+        region: str,
     ) -> None:
         self.id = resourceId
         self.name = name
+        self.region = region
 
 
 class API_Connection:
@@ -834,6 +838,7 @@ class API_Connection:
         self: str,
         resourceId: str,
         name: str,
+        region: str,
     ) -> None:
         self.id: str = resourceId
         self.name = name
