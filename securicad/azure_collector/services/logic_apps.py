@@ -65,7 +65,7 @@ def parse_integration_acc(resource) -> Integration_Account:
     resourceId = resource.id.lower()
     name = resource.name.lower()
     region = resource.location.lower()
-    object_to_add = Integration_Account(resourceId=resourceId, name=name, region=region)
+    object_to_add = Integration_Account(resourceId=resourceId, name=name, region=region
     return object_to_add
 
 
