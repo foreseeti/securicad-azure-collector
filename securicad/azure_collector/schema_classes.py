@@ -841,4 +841,5 @@ class API_Connection:
         region: str,
     ) -> None:
         self.id: str = resourceId
-        self.name = name
+        self.name: str = name
+        self.region: str = region
