@@ -559,8 +559,6 @@ def iterate_resources_to_json(
                     resource_group,
                     credentials,
                     sub_id,
-                    rg_client,
-                    rg_query_options,
                 )
                 json_key = "logicApps"
 
