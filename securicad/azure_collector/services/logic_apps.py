@@ -23,14 +23,18 @@ from securicad.azure_collector.schema_classes import (
 from securicad.azure_collector.services.parser_logger import log
 
 
-def parse_logic_app(resource, resource_group, credentials, sub_id) -> Logic_App:
+def parse_logic_app(
+    resource,
+    resource_group,
+    credentials,
+    sub_id,
+) -> Logic_App:
     region = resource.location.lower()
     resourceId = resource.id.lower()
     name = resource.name.lower()
     principal_id = (
         resource.managed_by if resource.managed_by else ""
     )  # this doesn't seem to be assigned, find principalId elsewhere?
-
     logic_client = logic.LogicManagementClient(
         credential=credentials, subscription_id=sub_id
     )
@@ -65,7 +69,7 @@ def parse_integration_acc(resource) -> Integration_Account:
     resourceId = resource.id.lower()
     name = resource.name.lower()
     region = resource.location.lower()
-    object_to_add = Integration_Account(resourceId=resourceId, name=name, region=region
+    object_to_add = Integration_Account(resourceId=resourceId, name=name, region=region)
     return object_to_add
 
 

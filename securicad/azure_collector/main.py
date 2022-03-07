@@ -555,7 +555,12 @@ def iterate_resources_to_json(
 
             elif resource_type == "microsoft.logic/workflows":
                 object_to_add = logic_apps.parse_logic_app(
-                    resource, resource_group, credentials, sub_id
+                    resource,
+                    resource_group,
+                    credentials,
+                    sub_id,
+                    rg_client,
+                    rg_query_options,
                 )
                 json_key = "logicApps"
 
