@@ -75,7 +75,7 @@ def parse_obj(
         bgp_peering_addresses = raw_bgp_settings.get("bgpPeeringAddreses", [])
     except AttributeError:
         log.error(
-            f"Couldn\'t get ["bgpPeeringAddresses"] from bgpSettings of virtual network gateway {name}"
+            f'Couldn\'t get ["bgpPeeringAddresses"] from bgpSettings of virtual network gateway {name}'
         )
         bgp_peering_addresses = {}
     for raw_bgp_setting in bgp_peering_addresses:
@@ -83,22 +83,27 @@ def parse_obj(
             bgp_setting = {
                 "ipConfigId": raw_bgp_setting.get("ipconfigurationId"),
                 "tunnelIpAddress": raw_bgp_setting.get("tunnelIpAddresses", list()),
-                "customBgpIpAddresses": raw_bgp_setting.get("customBgpIpAddresses", list()),
+                "customBgpIpAddresses": raw_bgp_setting.get(
+                    "customBgpIpAddresses", list()
+                ),
                 "defaultBgpIpAddresses": raw_bgp_setting.get(
                     "defaultBgpIpAddresses", list()
                 ),
             }
         except AttributeError:
-            log.error(f"Couldn't get bgp_setting from raw_bgp_setting for virtual network gateway {name}")
+            log.error(
+                f"Couldn't get bgp_setting from raw_bgp_setting for virtual network gateway {name}."
+            )
             bgp_setting = {}
         bgp_settings.append(bgp_setting)
-    final_bgp_setting = {
-        "bgpPeeringAddresses": bgp_settings,
-        "asn": raw_bgp_settings.get("asn"),
-        "bgpPeeringAddress": raw_bgp_settings.get("bgpPeeringAddress"),
-    }
-    log.error(f"Couldn't get bgpSettings for virtual network gateway {name}")
-
+    try:
+        final_bgp_setting = {
+            "bgpPeeringAddresses": bgp_settings,
+            "asn": raw_bgp_settings.get("asn"),
+            "bgpPeeringAddress": raw_bgp_settings.get("bgpPeeringAddress"),
+        }
+    except AttributeError:
+        log.error(f"Couldn't get bgpSettings for virtual network gateway {name}.")
     object_to_add = VnetGateway(
         gwId=resource_id,
         name=name,
