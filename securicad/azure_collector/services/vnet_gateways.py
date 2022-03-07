@@ -103,6 +103,7 @@ def parse_obj(
             "bgpPeeringAddress": raw_bgp_settings.get("bgpPeeringAddress"),
         }
     except AttributeError:
+        final_bgp_setting = {}
         log.error(f"Couldn't get bgpSettings for virtual network gateway {name}.")
     object_to_add = VnetGateway(
         gwId=resource_id,
