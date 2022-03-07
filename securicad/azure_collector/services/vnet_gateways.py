@@ -65,19 +65,13 @@ def parse_obj(
             "subnet": raw_ip_config.get("properties", {}).get("subnet", {}).get("id"),
         }
         ip_configs.append(ip_config)
-    raw_bgp_settings = raw_properties.get("bgpSettings")
+    raw_bgp_settings = raw_properties.get("bgpSettings", {})
     if not raw_bgp_settings:
         log.debug(
             f"Couldn't get bgpSettings of virtual network gateway {name}. Impact: None"  # We don't do anything with bgp regardless
         )
     bgp_settings = []
-    try:
-        bgp_peering_addresses = raw_bgp_settings.get("bgpPeeringAddreses", [])
-    except AttributeError:
-        log.error(
-            f'Couldn\'t get ["bgpPeeringAddresses"] from bgpSettings of virtual network gateway {name}'
-        )
-        bgp_peering_addresses = {}
+    bgp_peering_addresses = raw_bgp_settings.get("bgpPeeringAddreses", [])
     for raw_bgp_setting in bgp_peering_addresses:
         try:
             bgp_setting = {
@@ -104,7 +98,7 @@ def parse_obj(
         }
     except AttributeError:
         final_bgp_setting = {}
-        log.error(f"Couldn't get bgpSettings for virtual network gateway {name}.")
+        log.debug(f"Couldn't get bgpSettings for virtual network gateway {name}.")
     object_to_add = VnetGateway(
         gwId=resource_id,
         name=name,
