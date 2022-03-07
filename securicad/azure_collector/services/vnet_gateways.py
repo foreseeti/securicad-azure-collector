@@ -17,10 +17,21 @@ from securicad.azure_collector.services.parser_logger import log
 import azure.mgmt.resourcegraph as arg
 
 
-def parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_options, resource_id, DEBUGGING) -> VnetGateway:
+def parse_obj(
+    resource_type,
+    resource_group,
+    sub_id,
+    name,
+    rg_client,
+    rg_query_options,
+    resource_id,
+    DEBUGGING,
+) -> VnetGateway:
     str_query = f"resources | where type =~ 'microsoft.network/virtualnetworkgateways' and name == '{name}'"
     query = arg.models.QueryRequest(
-        subscriptions=[sub_id], query=str_query, options=rg_query_options,
+        subscriptions=[sub_id],
+        query=str_query,
+        options=rg_query_options,
     )
     try:
         rg_results_as_dict = rg_client.resources(query=query).__dict__
@@ -48,34 +59,39 @@ def parse_obj(resource_type, resource_group, sub_id, name, rg_client, rg_query_o
         ip_config = {
             "id": raw_ip_config.get("id"),
             "name": raw_ip_config.get("name"),
-            "publicIpAddress": raw_ip_config.get("properties", {}).get(
-                "publicIPAddress", {}).get("id"),
-            "subnet": raw_ip_config.get("properties",{}).get("subnet",{}).get("id"),
+            "publicIpAddress": raw_ip_config.get("properties", {})
+            .get("publicIPAddress", {})
+            .get("id"),
+            "subnet": raw_ip_config.get("properties", {}).get("subnet", {}).get("id"),
         }
         ip_configs.append(ip_config)
     raw_bgp_settings = raw_properties.get("bgpSettings")
     if not raw_bgp_settings:
         log.debug(
-            f"Couldn't get bgpSettings of virtual network gateway {name}. Impact: None" # We don't do anything with bgp regardless
+            f"Couldn't get bgpSettings of virtual network gateway {name}. Impact: None"  # We don't do anything with bgp regardless
         )
     bgp_settings = []
-    for raw_bgp_setting in (
-        raw_bgp_settings.get("bgpPeeringAddresses", [])
-    ):
-        bgp_setting = {
-            "ipConfigId": raw_bgp_setting.get("ipconfigurationId"),
-            "tunnelIpAddress": raw_bgp_setting.get("tunnelIpAddresses", list()),
-            "customBgpIpAddresses": raw_bgp_setting.get("customBgpIpAddresses", list()),
-            "defaultBgpIpAddresses": raw_bgp_setting.get(
-                "defaultBgpIpAddresses", list()
-            ),
+    try:
+        for raw_bgp_setting in raw_bgp_settings.get("bgpPeeringAddresses", []):
+            bgp_setting = {
+                "ipConfigId": raw_bgp_setting.get("ipconfigurationId"),
+                "tunnelIpAddress": raw_bgp_setting.get("tunnelIpAddresses", list()),
+                "customBgpIpAddresses": raw_bgp_setting.get(
+                    "customBgpIpAddresses", list()
+                ),
+                "defaultBgpIpAddresses": raw_bgp_setting.get(
+                    "defaultBgpIpAddresses", list()
+                ),
+            }
+            bgp_settings.append(bgp_setting)
+        final_bgp_setting = {
+            "bgpPeeringAddresses": bgp_settings,
+            "asn": raw_bgp_settings.get("asn"),
+            "bgpPeeringAddress": raw_bgp_settings.get("bgpPeeringAddress"),
         }
-        bgp_settings.append(bgp_setting)
-    final_bgp_setting = {
-        "bgpPeeringAddresses": bgp_settings,
-        "asn": raw_bgp_settings.get("asn"),
-        "bgpPeeringAddress": raw_bgp_settings.get("bgpPeeringAddress")
-    }
+    except AttributeError:
+        bgp_setting = {}
+        log.error(f"Couldn't get bgpSettings for virtual network gateway {name}")
 
     object_to_add = VnetGateway(
         gwId=resource_id,
